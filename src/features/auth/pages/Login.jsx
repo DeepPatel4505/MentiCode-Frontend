@@ -1,12 +1,16 @@
 import React,{useState} from 'react'
 import { useNavigate,Link } from 'react-router';
 import { useAuth } from '../hooks/useAuth.js';
+import { getOAuthSignInUrl } from '../services/auth.api.js';
 
 function Login() {
 
-    const {loading, handleLogin,fetchCurrentUser} = useAuth();
+    const {loading, handleLogin} = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
+    const googleOAuthUrl = getOAuthSignInUrl('google');
+    const githubOAuthUrl = getOAuthSignInUrl('github');
 
     const navigate = useNavigate();
 
@@ -22,6 +26,8 @@ function Login() {
   return (
     <main>
         <div>Login</div>
+                <a href={googleOAuthUrl}>Google Sign In</a>
+                <a href={githubOAuthUrl}>Github Sign In</a>
         <form onSubmit={handleSubmit}>
             <div className='input-group'>
                 <input 

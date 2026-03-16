@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { AuthContext } from "../context/auth.context";
-import {login,logout,register,getMe,forgotPassword,resetPassword} from '../services/auth.api.js'
+import {login,logout,register,getMe,forgotPassword,resetPassword,changePassword,setPassword} from '../services/auth.api.js'
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
@@ -106,6 +106,31 @@ export const useAuth = () => {
             setLoading(false);
         }
     };
+    const changeCurrentPassword = async ({oldPassword, newPassword}) => {
+        try {
+            const res = await changePassword({oldPassword, newPassword});
+            return { success: true, message: res?.message || 'Password changed successfully!' };
+        }
+        catch (error)
+        {
+            console.error("Change password request failed:", error);
+            const message = error?.message || 'Failed to change password. Please try again.';
+            return { success: false, message };
+        }
+    };
+
+    const setInitialPassword = async ({newPassword}) => {
+        try {
+            const res = await setPassword({newPassword});
+            return { success: true, message: res?.message || 'Password set successfully!' };
+        }
+        catch (error)
+        {
+            console.error("Set password request failed:", error);
+            const message = error?.message || 'Failed to set password. Please try again.';
+            return { success: false, message };
+        }
+    };
 
     return {
         user,
@@ -116,5 +141,7 @@ export const useAuth = () => {
         fetchCurrentUser,
         sendForgotPasswordEmail,
         setForgotPassword,
+        changeCurrentPassword,
+        setInitialPassword
     }
 }

@@ -5,6 +5,7 @@ import { AuthProvider } from './features/auth/context/auth.context.jsx'
 
 function App() {
 
+
   return (
     <AuthProvider>
       <RouterProvider router={router} />

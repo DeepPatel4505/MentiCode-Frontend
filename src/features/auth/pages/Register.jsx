@@ -2,6 +2,7 @@ import React from 'react'
 import { useState } from 'react';
 import { useNavigate,Link } from 'react-router';
 import { useAuth } from '../hooks/useAuth.js';
+import { getOAuthSignInUrl } from '../services/auth.api.js';
 
 function Register() {
 
@@ -10,6 +11,9 @@ function Register() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
+    const googleOAuthUrl = getOAuthSignInUrl('google');
+    const githubOAuthUrl = getOAuthSignInUrl('github');
 
     const navigate = useNavigate();
 
@@ -26,6 +30,8 @@ function Register() {
   return (
     <main>
         <div>Register</div>
+        <a href={googleOAuthUrl}>Google Sign In</a>
+        <a href={githubOAuthUrl}>Github Sign In</a>
         <form onSubmit={handleSubmit}>
             <div className='input-group'>
                 <input 

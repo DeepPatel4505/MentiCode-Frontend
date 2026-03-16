@@ -1,15 +1,19 @@
 import React from 'react'
+import { useNavigate } from 'react-router';
 import { useAuth } from '../../../hooks/useAuth';
 
 function ForgotPassword() {
 
     const {loading ,sendForgotPasswordEmail} = useAuth();
     const [email, setEmail] = React.useState('');
+    const navigate = useNavigate();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const success = await sendForgotPasswordEmail({email});
         if(success) {
             alert("Reset password email sent successfully!");
+            navigate('/login');
         }
         else {
             alert("Failed to send reset password email. Please try again.");

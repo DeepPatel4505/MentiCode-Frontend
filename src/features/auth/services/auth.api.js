@@ -5,6 +5,15 @@ const api = axios.create({
     baseURL: API_URL,
     withCredentials: true
 })
+const SUPPORTED_OAUTH_PROVIDERS = new Set(['google', 'github'])
+
+export const getOAuthSignInUrl = (provider) => {
+    if (!SUPPORTED_OAUTH_PROVIDERS.has(provider)) {
+        throw new Error(`Unsupported OAuth provider: ${provider}`)
+    }
+
+    return `${API_URL}/auth/${provider}`
+}
 
 export const login = async ({email,password}) => {
     try {
@@ -75,6 +84,28 @@ export const forgotPassword = async ({email}) => {
 export const resetPassword = async ({token,newPassword}) => {
     try {
         const response = await api.post(`/auth/reset-forgot-password/${token}`, {newPassword})
+        return response.data
+    }
+    catch (error) {
+        console.log(error)
+        throw error.response.data
+    }
+}
+
+export const changePassword = async ({oldPassword, newPassword}) => {
+    try {
+        const response = await api.post(`/auth/change-password`, {oldPassword, newPassword})
+        return response.data
+    }
+    catch (error) {
+        console.log(error)
+        throw error.response.data
+    }
+}
+
+export const setPassword = async ({newPassword}) => {
+    try {
+        const response = await api.post(`/auth/set-password`, {newPassword})
         return response.data
     }
     catch (error) {

@@ -10,7 +10,6 @@ function Protected({children}) {
     }
     
     if(!user) {
-        console.log(user)
         return <Navigate to="/login" />;
     }
 

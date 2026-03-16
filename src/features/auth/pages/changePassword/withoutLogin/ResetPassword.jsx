@@ -11,14 +11,6 @@ function ResetPassword() {
   const token = useParams().token;
   const navigate = useNavigate();
 
-    // useEffect = () => {
-    //     if(!token) {
-    //         alert("Invalid or missing token!");
-    //         return;
-    //     }
-
-    //     // await 
-    // },[]}
     
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -31,6 +23,7 @@ function ResetPassword() {
         const success = await setForgotPassword({token,newPassword});
         if(success) {
             alert("Password reset successfully!");
+            navigate('/login');
         }
         else {
             alert("Failed to reset password. Please try again.");

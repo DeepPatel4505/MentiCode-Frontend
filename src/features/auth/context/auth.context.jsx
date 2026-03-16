@@ -11,30 +11,29 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
             const getAndSetUser = async () => {
             try {
+                // Try with the current access token first
                 const userData = await getMe();
-                const currentUser = userData?.data?.user ?? null;
-                setUser(currentUser);
-                
-                const token=null;
-                
+                setUser(userData?.data?.user ?? null);
+
+                // Rotate tokens on app refresh without breaking a valid session.
                 try {
-                    token = await refresh();
+                    await refresh();
                 }
                 catch (refreshError) {
-                    console.log("Refresh failed:", refreshError);
+                    console.warn("Background refresh failed:", refreshError);
                 }
-
-                if(token)
-                {
-                    const refreshedUserData = await getMe();
-                    const refreshedUser = refreshedUserData?.data?.user ?? null;
-                    setUser(refreshedUser);
-                }
-                
             } 
-            catch (error) {
-                console.error("Failed to fetch current user:", error);
-                setUser(null);
+            catch {
+                // Access token expired or missing — try to refresh
+                try {
+                    await refresh();
+                    const userData = await getMe();
+                    setUser(userData?.data?.user ?? null);
+                }
+                catch {
+                    // Refresh token also invalid/expired — force login
+                    setUser(null);
+                }
             } 
             finally {
                 setLoading(false);
