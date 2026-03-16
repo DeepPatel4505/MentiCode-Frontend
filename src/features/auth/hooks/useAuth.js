@@ -13,10 +13,12 @@ export const useAuth = () => {
             const data = await login({email,password});
             console.log("Login successful:", data);
             setUser(data.data.user);
+            return { success: true };
         } 
         catch (error) 
         {
             console.error("Login failed:", error);
+            return { success: false };
         } 
         finally 
         {
@@ -122,6 +124,9 @@ export const useAuth = () => {
     const setInitialPassword = async ({newPassword}) => {
         try {
             const res = await setPassword({newPassword});
+            if (res?.data?.user) {
+                setUser(res.data.user);
+            }
             return { success: true, message: res?.message || 'Password set successfully!' };
         }
         catch (error)
