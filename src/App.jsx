@@ -1,4 +1,3 @@
-import './App.css'
 import {RouterProvider} from 'react-router'
 import router from './routes/app.routes.jsx'
 import { AuthProvider } from './features/auth/context/auth.context.jsx'

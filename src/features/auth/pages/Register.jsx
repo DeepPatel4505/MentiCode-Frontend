@@ -65,17 +65,17 @@ function Register() {
         const score = Object.values(checks).filter(Boolean).length;
 
         let label = "Weak";
-        let color = "#ef4444";
+        let color = "var(--auth-error)";
 
         if (score >= 4) {
             label = "Strong";
-            color = "#22c55e";
+            color = "var(--auth-success)";
         } else if (score >= 3) {
             label = "Good";
-            color = "#3b82f6";
+            color = "var(--auth-accent)";
         } else if (score >= 2) {
             label = "Fair";
-            color = "#eab308";
+            color = "var(--auth-warning)";
         }
 
         return { checks, score, label, color };
@@ -101,16 +101,16 @@ function Register() {
     }
 
     return (
-        <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] p-4 text-white">
+        <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-(--auth-bg) p-4 text-white">
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
                 <div className="absolute left-1/2 top-[-50%] h-full w-full max-w-[800px] -translate-x-1/2 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.08)_0%,transparent_70%)]" />
                 <div className="absolute inset-0 [background-image:linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
             </div>
 
             <div className="relative z-10 w-full max-w-[440px]">
-                <div className="rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_20px_25px_-5px_rgba(0,0,0,0.5),0_8px_10px_-6px_rgba(0,0,0,0.5)] sm:p-10">
+                <div className="rounded-2xl border border-(--auth-border) bg-(--auth-surface) p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_20px_25px_-5px_rgba(0,0,0,0.5),0_8px_10px_-6px_rgba(0,0,0,0.5)] sm:p-10">
                     <div className="mb-6 flex justify-center">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#3b82f6] to-[#60a5fa] text-white">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-(--auth-accent) to-(--auth-accent-2) text-white">
                             <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                             </svg>
@@ -119,28 +119,28 @@ function Register() {
 
                     <div className="mb-8 text-center">
                         <h1 className="mb-2 text-[1.75rem] font-bold tracking-[-0.02em] text-white">Create an account</h1>
-                        <p className="text-[0.9375rem] text-[#71717a]">Get started with your free account today</p>
+                        <p className="text-[0.9375rem] text-(--auth-muted)">Get started with your free account today</p>
                     </div>
 
                     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:gap-3">
-                        <a href={googleOAuthUrl} className="flex flex-1 items-center justify-center gap-2 rounded-[10px] border border-[#27272a] bg-[#0f0f0f] px-4 py-3 text-sm font-medium text-white transition hover:-translate-y-px hover:border-[#71717a] hover:bg-[#1a1a1a]">
+                        <a href={googleOAuthUrl} className="flex flex-1 items-center justify-center gap-2 rounded-[10px] border border-(--auth-input-border) bg-(--auth-input-bg) px-4 py-3 text-sm font-medium text-white transition hover:-translate-y-px hover:border-(--auth-muted) hover:bg-(--auth-hover-bg)">
                             <GoogleIcon />
                             <span>Google</span>
                         </a>
-                        <a href={githubOAuthUrl} className="flex flex-1 items-center justify-center gap-2 rounded-[10px] border border-[#27272a] bg-[#0f0f0f] px-4 py-3 text-sm font-medium text-white transition hover:-translate-y-px hover:border-[#71717a] hover:bg-[#1a1a1a]">
+                        <a href={githubOAuthUrl} className="flex flex-1 items-center justify-center gap-2 rounded-[10px] border border-(--auth-input-border) bg-(--auth-input-bg) px-4 py-3 text-sm font-medium text-white transition hover:-translate-y-px hover:border-(--auth-muted) hover:bg-(--auth-hover-bg)">
                             <GithubIcon />
                             <span>GitHub</span>
                         </a>
                     </div>
 
                     <div className="mb-6 flex items-center gap-4">
-                        <span className="h-px flex-1 bg-[#1a1a1a]" />
-                        <span className="text-xs uppercase tracking-[0.05em] text-[#71717a]">or continue with email</span>
-                        <span className="h-px flex-1 bg-[#1a1a1a]" />
+                        <span className="h-px flex-1 bg-(--auth-hover-bg)" />
+                        <span className="text-xs uppercase tracking-[0.05em] text-(--auth-muted)">or continue with email</span>
+                        <span className="h-px flex-1 bg-(--auth-hover-bg)" />
                     </div>
 
                     {error && (
-                        <div className="mb-6 flex items-center gap-2 rounded-[10px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-[#ef4444]">
+                        <div className="mb-6 flex items-center gap-2 rounded-[10px] border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-(--auth-error)">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                                 <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-7v2h2v-2h-2zm0-8v6h2V7h-2z" />
                             </svg>
@@ -150,11 +150,11 @@ function Register() {
 
                     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                         <div>
-                            <label htmlFor="username" className={`mb-2 block text-sm font-medium transition ${focusedField === "username" ? "text-[#3b82f6]" : "text-white"}`}>Username</label>
+                            <label htmlFor="username" className={`mb-2 block text-sm font-medium transition ${focusedField === "username" ? "text-(--auth-accent)" : "text-white"}`}>Username</label>
                             <input
                                 id="username"
                                 type="text"
-                                className="w-full rounded-[10px] border border-[#27272a] bg-[#0f0f0f] px-4 py-3 text-[0.9375rem] text-white outline-none transition placeholder:text-[#71717a] focus:border-[#3b82f6] focus:ring-4 focus:ring-[#3b82f6]/15"
+                                className="w-full rounded-[10px] border border-(--auth-input-border) bg-(--auth-input-bg) px-4 py-3 text-[0.9375rem] text-white outline-none transition placeholder:text-(--auth-muted) focus:border-(--auth-accent) focus:ring-4 focus:ring-(--auth-accent)/15"
                                 placeholder="johndoe"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
@@ -165,11 +165,11 @@ function Register() {
                         </div>
 
                         <div>
-                            <label htmlFor="email" className={`mb-2 block text-sm font-medium transition ${focusedField === "email" ? "text-[#3b82f6]" : "text-white"}`}>Email</label>
+                            <label htmlFor="email" className={`mb-2 block text-sm font-medium transition ${focusedField === "email" ? "text-(--auth-accent)" : "text-white"}`}>Email</label>
                             <input
                                 id="email"
                                 type="email"
-                                className="w-full rounded-[10px] border border-[#27272a] bg-[#0f0f0f] px-4 py-3 text-[0.9375rem] text-white outline-none transition placeholder:text-[#71717a] focus:border-[#3b82f6] focus:ring-4 focus:ring-[#3b82f6]/15"
+                                className="w-full rounded-[10px] border border-(--auth-input-border) bg-(--auth-input-bg) px-4 py-3 text-[0.9375rem] text-white outline-none transition placeholder:text-(--auth-muted) focus:border-(--auth-accent) focus:ring-4 focus:ring-(--auth-accent)/15"
                                 placeholder="you@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -180,12 +180,12 @@ function Register() {
                         </div>
 
                         <div>
-                            <label htmlFor="password" className={`mb-2 block text-sm font-medium transition ${focusedField === "password" ? "text-[#3b82f6]" : "text-white"}`}>Password</label>
+                            <label htmlFor="password" className={`mb-2 block text-sm font-medium transition ${focusedField === "password" ? "text-(--auth-accent)" : "text-white"}`}>Password</label>
                             <div className="relative">
                                 <input
                                     id="password"
                                     type={showPassword ? "text" : "password"}
-                                    className="w-full rounded-[10px] border border-[#27272a] bg-[#0f0f0f] px-4 py-3 pr-12 text-[0.9375rem] text-white outline-none transition placeholder:text-[#71717a] focus:border-[#3b82f6] focus:ring-4 focus:ring-[#3b82f6]/15"
+                                    className="w-full rounded-[10px] border border-(--auth-input-border) bg-(--auth-input-bg) px-4 py-3 pr-12 text-[0.9375rem] text-white outline-none transition placeholder:text-(--auth-muted) focus:border-(--auth-accent) focus:ring-4 focus:ring-(--auth-accent)/15"
                                     placeholder="Create a strong password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -195,7 +195,7 @@ function Register() {
                                 />
                                 <button
                                     type="button"
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#71717a] transition hover:text-white"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-(--auth-muted) transition hover:text-white"
                                     onClick={() => setShowPassword(!showPassword)}
                                     aria-label={showPassword ? "Hide password" : "Show password"}
                                 >
@@ -223,7 +223,7 @@ function Register() {
                             )}
 
                             {password && (
-                                <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-[#71717a] sm:grid-cols-2">
+                                <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-(--auth-muted) sm:grid-cols-2">
                                     {[
                                         { key: "length", label: "At least 8 characters" },
                                         { key: "uppercase", label: "One uppercase letter" },
@@ -232,7 +232,7 @@ function Register() {
                                     ].map((req) => (
                                         <div
                                             key={req.key}
-                                            className={`flex items-center gap-2 ${passwordStrength.checks[req.key] ? "text-[#22c55e]" : "text-[#71717a]"}`}
+                                            className={`flex items-center gap-2 ${passwordStrength.checks[req.key] ? "text-(--auth-success)" : "text-(--auth-muted)"}`}
                                         >
                                             <span className="inline-flex h-[14px] w-[14px] items-center justify-center">
                                                 {passwordStrength.checks[req.key] ? <CheckIcon /> : <span className="h-1 w-1 rounded-full bg-current" />}
@@ -246,7 +246,7 @@ function Register() {
 
                         <button
                             type="submit"
-                            className="mt-2 w-full rounded-[10px] bg-white px-6 py-3.5 text-[0.9375rem] font-semibold text-[#050505] transition hover:-translate-y-px hover:bg-[#e4e4e7] disabled:cursor-not-allowed disabled:opacity-70"
+                            className="mt-2 w-full rounded-[10px] bg-white px-6 py-3.5 text-[0.9375rem] font-semibold text-(--auth-on-light) transition hover:-translate-y-px hover:bg-(--auth-button-hover) disabled:cursor-not-allowed disabled:opacity-70"
                             disabled={isSubmitting}
                         >
                             {isSubmitting ? (
@@ -260,9 +260,9 @@ function Register() {
                         </button>
                     </form>
 
-                    <p className="mt-6 text-center text-sm text-[#71717a]">
+                    <p className="mt-6 text-center text-sm text-(--auth-muted)">
                         Already have an account?{" "}
-                        <Link to="/login" className="font-medium text-[#3b82f6] transition hover:text-[#60a5fa]">
+                        <Link to="/login" className="font-medium text-(--auth-accent) transition hover:text-(--auth-accent-2)">
                             Sign in
                         </Link>
                     </p>
@@ -273,3 +273,5 @@ function Register() {
 }
 
 export default Register;
+
+

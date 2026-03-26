@@ -6,8 +6,8 @@ function Skeleton({ className = "" }) {
 
 function Shell({ children }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#050505] p-4">
-      <div className="w-full max-w-[420px] rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a] p-8">
+    <div className="flex min-h-screen items-center justify-center bg-(--auth-bg) p-4">
+      <div className="w-full max-w-[420px] rounded-2xl border border-(--auth-border) bg-(--auth-surface) p-8">
         {children}
       </div>
     </div>
@@ -123,3 +123,5 @@ export function SimpleFormSkeleton({ fieldCount = 1, title = true }) {
 }
 
 export default { LoginSkeleton, RegisterSkeleton, SimpleFormSkeleton };
+
+

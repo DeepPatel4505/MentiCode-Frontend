@@ -4,7 +4,7 @@ import {login,logout,register,getMe,forgotPassword,resetPassword,changePassword,
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    const {user, setUser, loading, setLoading} = context;
+    const {user, setUser, accessToken, setAccessToken, loading, setLoading} = context;
 
     const handleLogin = async ({email,password}) => {
         setLoading(true);
@@ -13,6 +13,7 @@ export const useAuth = () => {
             const data = await login({email,password});
             console.log("Login successful:", data);
             setUser(data.data.user);
+            setAccessToken(data?.data?.accessToken || null);
             return { success: true };
         } 
         catch (error) 
@@ -47,6 +48,7 @@ export const useAuth = () => {
         try {
             await logout();
             setUser(null);
+            setAccessToken(null);
         } 
         catch (error) 
         {
@@ -139,6 +141,7 @@ export const useAuth = () => {
 
     return {
         user,
+        accessToken,
         loading,
         handleLogin,
         handleRegister,

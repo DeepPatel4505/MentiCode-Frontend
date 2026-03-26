@@ -1,26 +1,124 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+    --color-accent-amber: #f3a42d;
+    --color-auth-bg: #050505;
+    --color-auth-surface: #0a0a0a;
+    --color-auth-hover-bg: #1a1a1a;
+    --color-auth-border: #1a1a1a;
+    --color-auth-input-border: #27272a;
+    --color-auth-input-bg: #0f0f0f;
+    --color-auth-muted: #71717a;
+    --color-auth-accent: #3b82f6;
+    --color-auth-accent-2: #60a5fa;
+    --color-auth-on-light: #050505;
+    --color-auth-button-hover: #e4e4e7;
+    --color-auth-error: #ef4444;
+    --color-auth-success: #22c55e;
+    --color-auth-warning: #eab308;
+}
+
+:root {
+    /* Shared layout theme tokens */
+    --bg-page: #0f131b;
+    --bg-navbar: #151a25;
+    --bg-sidebar: #131820;
+    --bg-content: #0e1219;
+    --bg-elevated: #1a202d;
+    --border: #3a4558;
+    --text-main: #e8eef8;
+    --text-muted: #a8b8d0;
+    --active: #f3a42d;
+
+    /* Legacy/starter tokens used in App.css */
+    --accent: #f3a42d;
+    --accent-bg: rgba(243, 164, 45, 0.12);
+    --accent-border: rgba(243, 164, 45, 0.45);
+    --text-h: #e8eef8;
+    --social-bg: rgba(58, 69, 88, 0.35);
+    --shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+
+    /* Shared neutral UI tokens */
+    --ui-bg-neutral: #2a2a2a;
+    --ui-text-neutral: #e8e8e8;
+    --ui-text-dim: #8e8e8e;
+    --ui-border-strong: #5a7a8d;
+    --ui-border-soft: #7a9ab8;
+
+    /* Auth surface tokens */
+    --auth-bg: #050505;
+    --auth-surface: #0a0a0a;
+    --auth-hover-bg: #1a1a1a;
+    --auth-border: #1a1a1a;
+    --auth-input-border: #27272a;
+    --auth-input-bg: #0f0f0f;
+    --auth-muted: #71717a;
+    --auth-accent: #3b82f6;
+    --auth-accent-2: #60a5fa;
+    --auth-on-light: #050505;
+    --auth-button-hover: #e4e4e7;
+    --auth-error: #ef4444;
+    --auth-success: #22c55e;
+    --auth-warning: #eab308;
+}
 
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
+    * {
+        box-sizing: border-box;
+    }
 
-  html,
-  body,
-  #root {
-    width: 100%;
-    min-height: 100%;
-  }
+    html,
+    body,
+    #root {
+        width: 100%;
+        min-height: 100%;
+    }
 
-  body {
-    margin: 0;
-    min-height: 100vh;
-    font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #050505;
-    color: #ffffff;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg-page);
+        color: var(--text-main);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        color-scheme: dark;
+    }
+}
+
+.monaco-editor .lint-highlight {
+    border-bottom: 1px dashed transparent;
+}
+
+.monaco-editor .lint-highlight--critical {
+    background: rgba(239, 68, 68, 0.16);
+    border-bottom-color: rgba(248, 113, 113, 0.85);
+}
+
+.monaco-editor .lint-highlight--major {
+    background: rgba(245, 158, 11, 0.16);
+    border-bottom-color: rgba(250, 204, 21, 0.9);
+}
+
+.monaco-editor .lint-highlight--minor {
+    background: rgba(59, 130, 246, 0.15);
+    border-bottom-color: rgba(96, 165, 250, 0.9);
+}
+
+.monaco-editor .lint-gutter {
+    margin-left: 4px;
+    width: 3px !important;
+    border-radius: 999px;
+}
+
+.monaco-editor .lint-gutter--critical {
+    background: #f87171;
+}
+
+.monaco-editor .lint-gutter--major {
+    background: #facc15;
+}
+
+.monaco-editor .lint-gutter--minor {
+    background: #60a5fa;
 }

@@ -1,10 +1,4 @@
-import axios from 'axios'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
-const api = axios.create({
-    baseURL: API_URL,
-    withCredentials: true
-})
+import api, { API_BASE_URL } from '../../../lib/api'
 const SUPPORTED_OAUTH_PROVIDERS = new Set(['google', 'github'])
 
 export const getOAuthSignInUrl = (provider) => {
@@ -12,7 +6,7 @@ export const getOAuthSignInUrl = (provider) => {
         throw new Error(`Unsupported OAuth provider: ${provider}`)
     }
 
-    return `${API_URL}/auth/${provider}`
+    return `${API_BASE_URL}/auth/${provider}`
 }
 
 export const login = async ({email,password}) => {
@@ -22,7 +16,7 @@ export const login = async ({email,password}) => {
     }
     catch (error) {
         console.log(error)
-        throw error.response.data
+        throw error
     }
 }
 
@@ -33,7 +27,7 @@ export const register = async ({username,email,password}) => {
     }
     catch (error) {
         console.log(error)
-        throw error.response.data
+        throw error
     }
 }   
 
@@ -44,7 +38,7 @@ export const logout = async () => {
     }
     catch (error) {
         console.log(error)
-        throw error.response.data
+        throw error
     }
 }
 
@@ -55,18 +49,19 @@ export const getMe = async () => {
     }
     catch (error) {
         console.log(error)
-        throw error.response.data
+        throw error
     }
 }
 
 export const refresh = async () => {
     try {
+        console.log("Attempting to refresh token...");
         const response = await api.post(`/auth/refresh`)
-        return response.data.accessToken;
+        return response.data?.data?.accessToken ?? null;
     }
     catch (error) {
         console.log(error)
-        throw error.response.data
+        throw error
     }
 }  
 
@@ -77,7 +72,7 @@ export const forgotPassword = async ({email}) => {
     }
     catch (error) {
         console.log(error)
-        throw error.response.data
+        throw error
     }
 }
 
@@ -88,7 +83,7 @@ export const resetPassword = async ({token,newPassword}) => {
     }
     catch (error) {
         console.log(error)
-        throw error.response.data
+        throw error
     }
 }
 
@@ -99,7 +94,7 @@ export const changePassword = async ({oldPassword, newPassword}) => {
     }
     catch (error) {
         console.log(error)
-        throw error.response.data
+        throw error
     }
 }
 
@@ -110,6 +105,6 @@ export const setPassword = async ({newPassword}) => {
     }
     catch (error) {
         console.log(error)
-        throw error.response.data
+        throw error
     }
 }
