@@ -2,7 +2,6 @@ import Protected from '../features/auth/components/Protected.jsx'
 import AnalyzeHome from '../features/analyze/pages/AnalyzeHome.jsx'
 import PlaygroundPage from '../features/analyze/pages/PlaygroundPage.jsx'
 import JobResultPage from '../features/analyze/pages/JobResultPage.jsx'
-import ProfilePage from '../features/analyze/pages/ProfilePage.jsx'
 import AnalyzeSidebar from '../features/analyze/sidebar/AnalyzeSidebar.jsx'
 import PlaygroundEditorPage from '../features/analyze/pages/PlaygroundEditorPage.jsx'
 import GlobalLayout from '../layouts/GlobalLayout.jsx'
@@ -38,10 +37,6 @@ const analyzeRoutes = [
   {
     path: '/analyze/my-analysis/:jobId',
     element: withAnalyzeLayout(<JobResultPage />)
-  },
-  {
-    path: '/analyze/profile',
-    element: withAnalyzeLayout(<ProfilePage />)
   },
   {
     path: '/analyze/job-result',

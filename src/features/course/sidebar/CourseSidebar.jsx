@@ -1,28 +1,30 @@
 import { NavLink } from "react-router";
 import { cn } from "../../../lib/utils.js";
 
-const analyzeNavigation = [
-    { path: "/analyze", label: "Dashboard", end: true },
-    { path: "/analyze/playground", label: "Playground" },
-    { path: "/analyze/my-analysis", label: "MyAnalysis" },
+const courseNavigation = [
+    { path: "/", label: "Courses", end: true },
+    { path: "/roadmaps", label: "Roadmaps" },
+    { path: "/my-learning", label: "MyLearning" },
+    { path: "/leaderboard", label: "Leaderboard" },
+    { path: "/pricing", label: "Pricing" },
 ];
 
-function AnalyzeSidebar() {
+function CourseSidebar() {
     return (
         <aside
             className="flex min-h-full flex-col p-4"
-            aria-label="Analyze navigation"
+            aria-label="Course navigation"
         >
             {/* Section Header */}
             <div className="mb-6">
                 <p className="m-0 text-xs uppercase tracking-uppercase text-text-muted font-semibold">
-                    Dev Environment
+                    Learning Environment
                 </p>
             </div>
 
             {/* Navigation Links */}
             <nav className="flex flex-col gap-2">
-                {analyzeNavigation.map((item) => (
+                {courseNavigation.map((item) => (
                     <NavLink
                         key={item.path}
                         to={item.path}
@@ -44,4 +46,4 @@ function AnalyzeSidebar() {
     );
 }
 
-export default AnalyzeSidebar;
+export default CourseSidebar;

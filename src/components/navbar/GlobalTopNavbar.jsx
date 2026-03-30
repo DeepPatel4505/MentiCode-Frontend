@@ -1,7 +1,31 @@
-import { NavLink } from 'react-router'
+import { useRef, useState } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '../../lib/utils.js'
+import { useAuth } from '../../features/auth/hooks/useAuth.js'
+import DropdownPortal from '../ui/DropdownPortal.jsx'
 
 function GlobalTopNavbar() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { user, loading, handleLogout } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const profileButtonRef = useRef(null)
+  const isAuth = !!user
+
+  const profileHref = '/profile'
+  const initials = (user?.username?.slice(0, 2) || 'MC').toUpperCase()
+
+  const onOpenProfile = () => {
+    setMenuOpen(false)
+    navigate(profileHref)
+  }
+
+  const onSignOut = async () => {
+    await handleLogout()
+    setMenuOpen(false)
+    navigate('/login')
+  }
+
   return (
     <header 
       className="
@@ -90,7 +114,15 @@ function GlobalTopNavbar() {
         </button>
 
         <button 
-          type="button" 
+          ref={profileButtonRef}
+          type="button"
+          onClick={() => {
+            if (!isAuth) {
+              navigate('/login')
+              return
+            }
+            setMenuOpen((prev) => !prev)
+          }}
           className="
             border border-lighter bg-elevated 
             text-white rounded-full 
@@ -99,9 +131,35 @@ function GlobalTopNavbar() {
             text-xs font-bold
           " 
           aria-label="Profile"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
         >
-          MC
+          {initials}
         </button>
+
+        <DropdownPortal
+          anchorRef={profileButtonRef}
+          isOpen={menuOpen && isAuth}
+          onClose={() => setMenuOpen(false)}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={onOpenProfile}
+            className="w-full text-left rounded-xs px-3 py-2 text-sm font-medium border-none bg-transparent text-text-muted hover:text-text-light hover:bg-white/5"
+          >
+            Profile
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={onSignOut}
+            disabled={loading}
+            className="w-full text-left rounded-xs px-3 py-2 text-sm font-medium border-none bg-transparent text-text-muted hover:text-text-light hover:bg-white/5"
+          >
+            {loading ? 'Signing out...' : 'Sign Out'}
+          </button>
+        </DropdownPortal>
       </div>
     </header>
   )
