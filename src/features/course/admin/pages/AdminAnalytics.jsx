@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { TrendingUp, Users, BookOpen, Zap, BarChart3 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend,
 } from "recharts";
 import { Card, CardContent, Skeleton } from "@/components/ui/index";
+import { selectAdminCourses, selectAdminStats } from "@/app/store/slices/adminSlice";
 import { cn } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
 
 const BLUE_PALETTE = ["#3B82F6", "#60A5FA", "#93C5FD", "#BFDBFE", "#1D4ED8"];
 
@@ -25,7 +26,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function AdminAnalytics() {
-  const { adminStats: stats, adminCourses: courses } = useCourse();
+  const stats   = useSelector(selectAdminStats);
+  const courses = useSelector(selectAdminCourses);
   const [loading, setLoading] = useState(!stats);
 
   useEffect(() => { if (stats) setLoading(false); }, [stats]);

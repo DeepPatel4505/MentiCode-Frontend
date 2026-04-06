@@ -1,12 +1,6 @@
 import { cn } from "../../../../lib/utils.js";
 
-function CreatePlaygroundOptionCard({
-    title,
-    description,
-    value,
-    selectedValue,
-    onSelect,
-}) {
+function CreatePlaygroundOptionCard({ title, description, value, selectedValue, onSelect }) {
     const isSelected = value === selectedValue;
 
     return (
@@ -14,29 +8,27 @@ function CreatePlaygroundOptionCard({
             type="button"
             onClick={() => onSelect(value)}
             className={cn(
-                "group relative w-full rounded-3xl border-2 p-4 text-left transition-all duration-300",
+                "group relative w-full rounded-md border p-3.5 text-left transition-all duration-150",
                 isSelected
-                    ? "border-accent-amber bg-[#1f1f1f] shadow-[0_10px_24px_rgba(0,0,0,0.25),0_0_18px_rgba(243,164,45,0.18)]"
-                    : "border-white bg-[#141414] hover:border-accent-amber hover:bg-[#1a1a1a]"
+                    ? "border-violet-500/50 bg-violet-500/8"
+                    : "border-neutral-800 bg-neutral-900/60 hover:border-neutral-700 hover:bg-neutral-900"
             )}
             aria-pressed={isSelected}
         >
             <span
                 className={cn(
-                    "absolute right-4 top-4 grid h-5 w-5 place-items-center rounded-full border text-xs font-bold transition-colors",
+                    "absolute right-3 top-3 w-4 h-4 rounded-full border text-[9px] font-bold flex items-center justify-center transition-colors",
                     isSelected
-                        ? "border-accent-amber text-accent-amber"
-                        : "border-white/60 text-white/60 group-hover:border-accent-amber group-hover:text-accent-amber"
+                        ? "border-violet-500 text-violet-400 bg-violet-500/15"
+                        : "border-neutral-700 text-neutral-700 group-hover:border-neutral-500"
                 )}
                 aria-hidden="true"
             >
                 {isSelected ? "✓" : ""}
             </span>
 
-            <p className="m-0 pr-8 text-sm font-semibold text-white">{title}</p>
-            <p className="mt-2 text-xs leading-relaxed text-[#a8b8d0]">
-                {description}
-            </p>
+            <p className="m-0 pr-6 text-sm font-medium text-neutral-200">{title}</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-neutral-600">{description}</p>
         </button>
     );
 }

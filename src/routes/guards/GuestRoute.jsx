@@ -1,16 +1,16 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/features/auth/hooks/useAuth";
-import useCourse from "@/features/course/hooks/useCourse";
+import { useSelector } from "react-redux";
+import { selectIsAuth } from "@/app/store/slices/authSlice";
+import { selectOnboarding } from "@/app/store/slices/gamificationSlice";
 
 export function GuestRoute({ children }) {
-  const { user } = useAuth();
-  const isAuth = !!user;
+  const isAuth = useSelector(selectIsAuth);
   return !isAuth ? children : <Navigate to="/dashboard" replace />;
 }
 
 // Redirects to onboarding if not completed yet
 export function OnboardRoute({ children }) {
-  const { onboarding } = useCourse();
+  const onboarding = useSelector(selectOnboarding);
   return onboarding.completed ? children : <Navigate to="/onboarding" replace />;
 }
 

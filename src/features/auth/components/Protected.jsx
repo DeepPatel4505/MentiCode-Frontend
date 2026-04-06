@@ -1,19 +1,12 @@
-import { useAuth } from "../hooks/useAuth";
-import { Navigate } from "react-router";
+import { Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { selectIsAuth } from "@/app/store/slices/authSlice";
 
-
-function Protected({children}) {
-    const {user,loading} = useAuth();
-
-    if(loading) {
-        return <main><div>Loading...</div></main>;
-    }
-    
-    if(!user) {
-        return <Navigate to="/login" />;
-    }
-
-  return children;
+/**
+ * Protected — wraps routes that require authentication.
+ * Used by analyze routes. Functionally identical to PrivateRoute.
+ */
+export default function Protected({ children }) {
+  const isAuth = useSelector(selectIsAuth);
+  return isAuth ? children : <Navigate to="/login" replace />;
 }
-
-export default Protected

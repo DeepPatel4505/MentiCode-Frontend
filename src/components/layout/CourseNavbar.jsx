@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { Zap } from "lucide-react";
+import { selectUser, selectIsAuth } from "@/app/store/slices/authSlice";
 import { Avatar } from "@/components/ui/index";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 
 export default function CourseNavbar({ courseTitle, courseSlug }) {
-  const { user } = useAuth();
-  const isAuth = !!user;
+  const user   = useSelector(selectUser);
+  const isAuth = useSelector(selectIsAuth);
 
   return (
     <div className="h-14 shrink-0 border-b border-border bg-card/95 backdrop-blur-md flex items-center px-4 gap-3 z-40">

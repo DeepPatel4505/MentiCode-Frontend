@@ -3,7 +3,7 @@ import { Search, Users, Shield, Crown, Ban, CheckCircle2 } from "lucide-react";
 import { Input, Card, Badge, Skeleton, Avatar } from "@/components/ui/index";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import api from "@/lib/api";
+import api from "@/lib/axios";
 import { cn, timeAgo } from "@/lib/utils";
 
 export default function AdminUsers() {

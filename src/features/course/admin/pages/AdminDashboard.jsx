@@ -1,11 +1,12 @@
 import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { BookOpen, Users, TrendingUp, Eye, Plus, ArrowRight, CheckCircle2 } from "lucide-react";
+import { fetchAdminStats, publishCourse, deleteCourse, selectAdminStats, selectAdminCourses, selectAdminLoading } from "@/app/store/slices/adminSlice";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, Badge, Skeleton } from "@/components/ui/index";
 import { useToast } from "@/components/ui/Toast";
 import { cn, getDifficultyConfig, timeAgo } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
 
 function StatCard({ icon: Icon, label, value, sub, color = "text-primary" }) {
   return (
@@ -23,27 +24,23 @@ function StatCard({ icon: Icon, label, value, sub, color = "text-primary" }) {
 }
 
 export default function AdminDashboard() {
+  const dispatch = useDispatch();
   const { toast } = useToast();
-  const {
-    adminStats: stats,
-    adminCourses: courses,
-    adminLoading: loading,
-    fetchAdminStats,
-    publishCourse,
-    deleteCourse,
-  } = useCourse();
+  const stats   = useSelector(selectAdminStats);
+  const courses = useSelector(selectAdminCourses);
+  const loading = useSelector(selectAdminLoading);
 
-  useEffect(() => { fetchAdminStats(); }, [fetchAdminStats]);
+  useEffect(() => { dispatch(fetchAdminStats()); }, [dispatch]);
 
   const handlePublish = async (id) => {
-    const res = await publishCourse(id);
+    const res = await dispatch(publishCourse(id));
     if (res.meta.requestStatus === "fulfilled") toast({ title: "Course published!", type: "success" });
     else toast({ title: "Error", description: res.payload, type: "error" });
   };
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this course? This cannot be undone.")) return;
-    const res = await deleteCourse(id);
+    const res = await dispatch(deleteCourse(id));
     if (res.meta.requestStatus === "fulfilled") toast({ title: "Course deleted", type: "info" });
   };
 

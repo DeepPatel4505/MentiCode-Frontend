@@ -1,11 +1,12 @@
 import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Trophy, Zap, Crown, Medal, BookOpen } from "lucide-react";
 import Shell from "@/components/layout/Shell";
 import { PageHeader } from "@/components/layout/Shell";
 import { Card, CardContent, Avatar, Skeleton } from "@/components/ui/index";
+import { fetchLeaderboard, selectLeaderboard } from "@/app/store/slices/gamificationSlice";
+import { selectUser } from "@/app/store/slices/authSlice";
 import { cn, formatXp } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 
 // ── Rank badge ────────────────────────────────────────────────
 
@@ -178,10 +179,11 @@ function EmptyState() {
 // ── Page ──────────────────────────────────────────────────────
 
 export default function LeaderboardPage() {
-  const { leaderboard, fetchLeaderboard } = useCourse();
-  const { user: me } = useAuth();
+  const dispatch    = useDispatch();
+  const leaderboard = useSelector(selectLeaderboard);
+  const me          = useSelector(selectUser);
 
-  useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard]);
+  useEffect(() => { dispatch(fetchLeaderboard()); }, [dispatch]);
 
   const meIdx = leaderboard.findIndex(
     (e) => e.userId === me?.id || e.username === me?.username
@@ -202,7 +204,7 @@ export default function LeaderboardPage() {
   const showBotEllipsis = listEntries.length > 0 && listEntries[listEntries.length - 1].rank < leaderboard.length;
 
   return (
-    <Shell showNavbar={false}>
+    <Shell>
       <PageHeader title="Leaderboard" description="All-time XP rankings — earn XP to climb" />
 
       <div className="max-w-2xl mx-auto space-y-6">

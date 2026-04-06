@@ -21,12 +21,12 @@ export default function CourseCard({ course, enrollment, showProgress = false })
     : `/courses/${course.slug}`;
 
   return (
-    <Card className="group hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden h-full flex flex-col">
+    <Card className="group hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 overflow-hidden h-full flex flex-col">
       {/* Thumbnail */}
-      <div className="aspect-video bg-gradient-to-br from-primary/10 to-blue-900/10 relative overflow-hidden shrink-0">
+      <div className="aspect-video bg-gradient-to-br from-violet-900/20 to-neutral-900 relative overflow-hidden shrink-0">
         {course.thumbnail
           ? <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-          : <div className="w-full h-full flex items-center justify-center"><BookOpen className="w-8 h-8 text-primary/30" /></div>
+          : <div className="w-full h-full flex items-center justify-center"><BookOpen className="w-8 h-8 text-neutral-700" /></div>
         }
         {course.isPro && (
           <div className="absolute top-2 right-2">
@@ -37,7 +37,7 @@ export default function CourseCard({ course, enrollment, showProgress = false })
 
       <CardContent className="p-4 flex flex-col flex-1 gap-2">
         {/* Title */}
-        <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">
+        <h3 className="font-semibold text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2 text-neutral-100">
           {course.title}
         </h3>
 
@@ -45,10 +45,10 @@ export default function CourseCard({ course, enrollment, showProgress = false })
         <div className="flex items-center gap-2 flex-wrap">
           <span className={cn("text-xs font-medium", diff.color)}>{diff.label}</span>
           {course.language && (
-            <span className="px-2 py-0.5 rounded-full text-xs bg-secondary text-muted-foreground">{course.language}</span>
+            <span className="px-1.5 py-0.5 rounded text-xs bg-neutral-800 text-neutral-400 border border-neutral-700">{course.language}</span>
           )}
           {course.totalXp > 0 && (
-            <div className="flex items-center gap-0.5 ml-auto text-primary">
+            <div className="flex items-center gap-0.5 ml-auto text-violet-400">
               <Zap className="w-3 h-3" />
               <span className="text-xs font-bold">{course.totalXp} XP</span>
             </div>

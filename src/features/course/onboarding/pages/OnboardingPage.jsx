@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Zap, Code2, Briefcase, Heart, Chrome, Users, Twitter, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { setOnboardingField, completeOnboarding, selectOnboarding } from "@/app/store/slices/gamificationSlice";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
 
 const STEPS = [
   { id: 1, title: "What's your level?",         subtitle: "We'll tailor your path to where you are." },
@@ -65,8 +66,8 @@ function Card({ selected, onClick, children }) {
 }
 
 export default function OnboardingPage() {
+  const dispatch   = useDispatch();
   const navigate   = useNavigate();
-  const { setOnboardingField, completeOnboarding } = useCourse();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
 
@@ -91,8 +92,8 @@ export default function OnboardingPage() {
     if (!canNext()) return;
     if (step < 5) { setStep((s) => s + 1); return; }
     setSaving(true);
-    setOnboardingField({ skillLevel, goal, heardFrom, topics, dailyGoal });
-    completeOnboarding();
+    dispatch(setOnboardingField({ skillLevel, goal, heardFrom, topics, dailyGoal }));
+    dispatch(completeOnboarding());
     await new Promise((r) => setTimeout(r, 300));
     navigate("/courses");
   };

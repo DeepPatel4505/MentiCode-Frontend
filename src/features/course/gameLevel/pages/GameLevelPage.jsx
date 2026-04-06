@@ -1,11 +1,15 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { ChevronRight, Zap, CheckCircle2, XCircle, Trophy, RotateCcw, Heart, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/index";
+import { fetchLevel, fetchMyCourses, selectCurrentLevel, selectLevelLoading, selectCurrentCourse } from "@/app/store/slices/courseSlice";
+import { submitLevelAttempt, selectAttemptLoading, selectLastAttemptResult, clearAttemptResult } from "@/app/store/slices/enrollSlice";
+import { addXp, fetchStreak } from "@/app/store/slices/gamificationSlice";
 import { useToast } from "@/components/ui/Toast";
 import { cn, triggerConfetti } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
+import CourseNavbar from "@/components/layout/CourseNavbar";
 
 function Lives({ count, max = 3 }) {
   return (
@@ -125,21 +129,15 @@ function ResultScreen({ result, level, onRetry, onContinue }) {
 
 export default function GameLevelPage() {
   const { slug, levelId } = useParams();
+  const dispatch   = useDispatch();
   const navigate   = useNavigate();
   const { toast }  = useToast();
-  const {
-    fetchLevel,
-    fetchMyCourses,
-    currentLevel: level,
-    levelLoading: loading,
-    currentCourse: course,
-    submitLevelAttempt,
-    attemptLoading: submitting,
-    lastAttemptResult: result,
-    clearAttemptResult,
-    addXp,
-    fetchStreak,
-  } = useCourse();
+
+  const level      = useSelector(selectCurrentLevel);
+  const loading    = useSelector(selectLevelLoading);
+  const submitting = useSelector(selectAttemptLoading);
+  const result     = useSelector(selectLastAttemptResult);
+  const course     = useSelector(selectCurrentCourse);
 
   const [answers,     setAnswers]     = useState({});
   const [currentQ,    setCurrentQ]    = useState(0);
@@ -153,9 +151,9 @@ export default function GameLevelPage() {
   const isCorrect = submitted && answers[question?.id] === question?.correctAnswer;
 
   useEffect(() => {
-    fetchLevel(levelId);
-    return () => { clearAttemptResult(); if (xpTimer.current) clearTimeout(xpTimer.current); };
-  }, [clearAttemptResult, fetchLevel, levelId]);
+    dispatch(fetchLevel(levelId));
+    return () => { dispatch(clearAttemptResult()); if (xpTimer.current) clearTimeout(xpTimer.current); };
+  }, [dispatch, levelId]);
 
   const handleSelect = (answer) => {
     if (submitted) return;
@@ -177,13 +175,13 @@ export default function GameLevelPage() {
       return;
     }
     const formatted = Object.entries(answers).map(([questionId, answer]) => ({ questionId, answer }));
-    const res = await submitLevelAttempt({ levelId, answers: formatted });
+    const res = await dispatch(submitLevelAttempt({ levelId, answers: formatted }));
     if (res.meta.requestStatus === "fulfilled") {
       const data = res.payload;
       if (data.isPassed && data.xpAwarded > 0) {
-        addXp(data.xpAwarded);
+        dispatch(addXp(data.xpAwarded));
         // Re-sync from server: fetch courses first (updates xpEarned), then recompute XP
-        fetchMyCourses().then(() => fetchStreak());
+        dispatch(fetchMyCourses()).then(() => dispatch(fetchStreak()));
         setShowXpBurst(true);
         xpTimer.current = setTimeout(() => setShowXpBurst(false), 2500);
       }
@@ -196,11 +194,12 @@ export default function GameLevelPage() {
 
   const handleRetry = () => {
     setAnswers({}); setCurrentQ(0); setSubmitted(false); setLives(3);
-    clearAttemptResult();
+    dispatch(clearAttemptResult());
   };
 
   if (loading || !level) return (
     <div className="min-h-screen bg-background flex flex-col">
+      <CourseNavbar courseTitle={course?.title} courseSlug={slug} />
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-lg px-4 space-y-5">
           <Skeleton className="h-3 w-full rounded-full" />
@@ -213,8 +212,9 @@ export default function GameLevelPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <CourseNavbar courseTitle={course?.title} courseSlug={slug} />
       {/* Level controls bar */}
-      <div className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md h-12 flex items-center px-4 gap-3">
+      <div className="sticky top-14 z-40 border-b border-border bg-background/95 backdrop-blur-md h-12 flex items-center px-4 gap-3">
         <Link to={`/courses/${slug}`} className="text-muted-foreground hover:text-foreground transition-colors mr-1">
           <X className="w-5 h-5" />
         </Link>

@@ -1,20 +1,28 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import {
   ChevronLeft, ChevronRight, ChevronDown,
   CheckCircle2, Zap, Play, FileText, X, PanelRight,
 } from "lucide-react";
+import CourseNavbar from "@/components/layout/CourseNavbar";
 import { Button } from "@/components/ui/Button";
 import { Progress, Skeleton } from "@/components/ui/index";
+import {
+  fetchCourseBySlug, fetchLesson, fetchMyCourses,
+  selectCurrentCourse, selectCurrentLesson, selectLessonLoading,
+} from "@/app/store/slices/courseSlice";
+import {
+  updateLessonProgress, fetchCourseProgress, selectCourseProgress,
+} from "@/app/store/slices/enrollSlice";
+import { fetchStreak } from "@/app/store/slices/gamificationSlice";
 import { cn, formatDuration } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
 
 // ── Sidebar section ───────────────────────────────────────────
 function SidebarSection({ section, lessonId, progress, onNavigate, justCompletedId }) {
   const completedLessons = new Set(
     progress?.lessonProgress?.filter((lp) => lp.isCompleted).map((lp) => lp.lessonId) ?? []
   );
-  // Optimistically mark the just-completed lesson without waiting for re-fetch
   if (justCompletedId) completedLessons.add(justCompletedId);
   const passedLevels = new Set(
     progress?.levelAttempts?.filter((a) => a.isPassed).map((a) => a.levelId) ?? []
@@ -36,7 +44,6 @@ function SidebarSection({ section, lessonId, progress, onNavigate, justCompleted
 
   return (
     <div className={cn("border-b border-border/60 last:border-b-0", allDone && "bg-green-500/5")}>
-      {/* Section header */}
       <button
         onClick={() => setOpen((o) => !o)}
         className={cn(
@@ -63,7 +70,6 @@ function SidebarSection({ section, lessonId, progress, onNavigate, justCompleted
         {allDone && <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />}
       </button>
 
-      {/* Items */}
       {open && (
         <div className="bg-background/40">
           {section.lessons?.map((lesson) => {
@@ -146,22 +152,129 @@ function SidebarSection({ section, lessonId, progress, onNavigate, justCompleted
   );
 }
 
+// ── Extract YouTube video ID from any YouTube URL ─────────────
+function extractYouTubeId(url) {
+  if (!url) return null;
+  try {
+    const u = new URL(url.trim());
+    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1).split("?")[0];
+    if (u.pathname.includes("/embed/")) return u.pathname.split("/embed/")[1]?.split("?")[0];
+    return u.searchParams.get("v") ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ── YouTube thumbnail overlay player ─────────────────────────
+// - Hides the YouTube red play button with a custom thumbnail + branded play button
+// - Uses YT IFrame API to detect video end → auto-marks lesson complete
+function YouTubeThumbnailPlayer({ embedUrl, videoId, lessonTitle, onEnded }) {
+  const [started, setStarted] = useState(false);
+  const playerContainerRef = useRef(null);
+  const thumbnailUrl = videoId
+    ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+    : null;
+
+  // Reset overlay whenever the lesson changes
+  useEffect(() => { setStarted(false); }, [embedUrl]);
+
+  // Initialize YouTube IFrame API once user clicks play
+  useEffect(() => {
+    if (!started || !videoId) return;
+
+    const initPlayer = () => {
+      if (!playerContainerRef.current) return;
+      new window.YT.Player(playerContainerRef.current, {
+        videoId,
+        playerVars: {
+          autoplay: 1,
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1,
+          iv_load_policy: 3,
+          controls: 1,
+          showinfo: 0,
+          color: "white", // white progress bar instead of red
+        },
+        events: {
+          onStateChange: (e) => {
+            // YT.PlayerState.ENDED === 0
+            if (e.data === window.YT.PlayerState.ENDED) {
+              onEnded?.();
+            }
+          },
+        },
+      });
+    };
+
+    if (window.YT?.Player) {
+      initPlayer();
+    } else {
+      // Load the YT IFrame API script only once
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const tag = document.createElement("script");
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(tag);
+      }
+      window.onYouTubeIframeAPIReady = initPlayer;
+    }
+  }, [started, videoId]);
+
+  // ── Before play: custom thumbnail + branded play button ─────
+  if (!started) {
+    return (
+      <div
+        className="w-full h-full relative cursor-pointer group"
+        onClick={() => setStarted(true)}
+      >
+        {thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            alt={lessonTitle ?? "Video thumbnail"}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback if maxresdefault not available
+              e.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+            }}
+          />
+        ) : (
+          <div className="w-full h-full bg-zinc-900" />
+        )}
+
+        {/* Subtle dark overlay on hover */}
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
+
+        {/* Custom play button — your brand color, no YouTube red */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all duration-200 flex items-center justify-center shadow-2xl">
+            <Play className="w-7 h-7 text-white ml-1 fill-white" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── After play: YT IFrame API player + bottom bar cover ─────
+  return (
+    <div className="w-full h-full relative">
+      {/* YT IFrame API replaces this div with the actual iframe */}
+      <div ref={playerContainerRef} className="w-full h-full" />
+      {/* Covers "More videos", YouTube logo, share/copy-URL button */}
+      <div className="absolute bottom-0 left-0 right-0 h-14 bg-black pointer-events-none" />
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────
 export default function LessonPlayerPage() {
   const { slug, lessonId } = useParams();
+  const dispatch  = useDispatch();
   const navigate  = useNavigate();
-  const {
-    currentCourse: course,
-    currentLesson: lesson,
-    lessonLoading: loading,
-    courseProgress: progress,
-    fetchCourseBySlug,
-    fetchLesson,
-    fetchMyCourses,
-    fetchCourseProgress,
-    updateLessonProgress,
-    fetchStreak,
-  } = useCourse();
+
+  const course   = useSelector(selectCurrentCourse);
+  const lesson   = useSelector(selectCurrentLesson);
+  const loading  = useSelector(selectLessonLoading);
+  const progress = useSelector(selectCourseProgress);
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -175,28 +288,27 @@ export default function LessonPlayerPage() {
     if (currentTime <= 0) return;
     clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      updateLessonProgress({ lessonId, watchedUpTo: currentTime, isCompleted: false });
+      dispatch(updateLessonProgress({ lessonId, watchedUpTo: currentTime, isCompleted: false }));
     }, 5000);
-  }, [updateLessonProgress]);
+  }, [dispatch]);
 
   useEffect(() => {
-    if (!course) fetchCourseBySlug(slug);
-    fetchLesson(lessonId);
+    if (!course) dispatch(fetchCourseBySlug(slug));
+    dispatch(fetchLesson(lessonId));
     currentTimeRef.current = 0;
     return () => {
       clearTimeout(saveTimerRef.current);
-      // Only save progress if the user actually watched something
       if (currentTimeRef.current > 0) {
-        updateLessonProgress({ lessonId, watchedUpTo: currentTimeRef.current, isCompleted: false });
+        dispatch(updateLessonProgress({ lessonId, watchedUpTo: currentTimeRef.current, isCompleted: false }));
       }
     };
-  }, [course, fetchCourseBySlug, fetchLesson, lessonId, slug, updateLessonProgress]);
+  }, [dispatch, slug, lessonId]);
 
   useEffect(() => {
-    if (course?.id) fetchCourseProgress(course.id);
-  }, [course?.id, fetchCourseProgress]);
+    if (course?.id) dispatch(fetchCourseProgress(course.id));
+  }, [dispatch, course?.id]);
 
-  // Flat list for prev/next
+  // Flat list of all items for prev/next navigation
   const allItems = [];
   course?.sections?.forEach((s) => {
     s.lessons?.forEach((l) => allItems.push({ type: "lesson", id: l.id }));
@@ -215,9 +327,7 @@ export default function LessonPlayerPage() {
   };
 
   const handleVideoPause = (currentTime) => {
-    if (currentTime > 0) {
-      debouncedSaveProgress(lessonId, currentTime);
-    }
+    if (currentTime > 0) debouncedSaveProgress(lessonId, currentTime);
   };
 
   const handleComplete = (watchedUpTo) => {
@@ -225,13 +335,60 @@ export default function LessonPlayerPage() {
     setCompleted(true);
     const payload = { lessonId, isCompleted: true };
     if (watchedUpTo != null && watchedUpTo > 0) payload.watchedUpTo = watchedUpTo;
-    updateLessonProgress(payload)
+    dispatch(updateLessonProgress(payload))
       .then(() => {
-        if (course?.id) fetchCourseProgress(course.id);
-        fetchMyCourses();
-        fetchStreak();
+        if (course?.id) dispatch(fetchCourseProgress(course.id));
+        dispatch(fetchMyCourses());
+        dispatch(fetchStreak());
       });
   };
+
+  const normalizeEmbedUrl = (url) => {
+    if (!url) return "";
+    const trimmed = url.trim();
+
+    const withCleanEmbedParams = (embedUrl) => {
+      try {
+        const parsed = new URL(embedUrl);
+        parsed.searchParams.set("rel", "0");
+        parsed.searchParams.set("modestbranding", "1");
+        parsed.searchParams.set("playsinline", "1");
+        parsed.searchParams.set("iv_load_policy", "3");
+        parsed.searchParams.set("controls", "1");
+        parsed.searchParams.set("showinfo", "0");
+        parsed.searchParams.set("color", "white"); // white progress bar, no red
+        return parsed.toString();
+      } catch {
+        return embedUrl;
+      }
+    };
+
+    if (trimmed.includes("youtube.com/watch")) {
+      try {
+        const parsed = new URL(trimmed);
+        const videoId = parsed.searchParams.get("v");
+        if (videoId) return withCleanEmbedParams(`https://www.youtube-nocookie.com/embed/${videoId}`);
+      } catch {
+        return trimmed;
+      }
+    }
+
+    if (trimmed.includes("youtu.be/")) {
+      const videoId = trimmed.split("youtu.be/")[1]?.split("?")[0];
+      if (videoId) return withCleanEmbedParams(`https://www.youtube-nocookie.com/embed/${videoId}`);
+    }
+
+    if (trimmed.includes("youtube.com/embed/")) {
+      return withCleanEmbedParams(trimmed.replace("youtube.com/embed/", "youtube-nocookie.com/embed/"));
+    }
+
+    return trimmed;
+  };
+
+  const embedUrl = normalizeEmbedUrl(lesson?.videoUrl ?? "");
+  const isEmbeddedProvider = embedUrl.includes("youtube") || embedUrl.includes("vimeo");
+  const isYouTubeEmbed = embedUrl.includes("youtube") || embedUrl.includes("youtu.be");
+  const youTubeVideoId = isYouTubeEmbed ? extractYouTubeId(lesson?.videoUrl ?? "") : null;
 
   const existingProgress = progress?.lessonProgress?.find((lp) => lp.lessonId === lessonId);
   const isDone = completed || !!existingProgress?.isCompleted;
@@ -239,8 +396,7 @@ export default function LessonPlayerPage() {
   const completedCount = progress?.lessonProgress?.filter((lp) => lp.isCompleted).length ?? 0;
   const totalCount = allItems.length;
 
-  // Only show full-page skeleton on the very first load (no course data yet).
-  // On lesson navigation, keep the full layout and show a video-area spinner only.
+  // Full-page skeleton only on the very first load (no data at all yet)
   const isInitialLoad = !course && !lesson;
 
   if (isInitialLoad) return (
@@ -260,14 +416,12 @@ export default function LessonPlayerPage() {
   // ── Sidebar content (shared between desktop + mobile) ────────
   const SidebarContent = () => (
     <>
-      {/* Progress header */}
       <div className="px-4 py-3 border-b border-border bg-card/50">
         <p className="text-sm font-semibold text-foreground">
           {completedCount} of {totalCount} complete
         </p>
         <Progress value={overallPct} className="h-1.5 mt-2" />
       </div>
-      {/* Section list */}
       <div className="flex-1 overflow-y-auto">
         {course?.sections?.map((section) => (
           <SidebarSection
@@ -287,7 +441,9 @@ export default function LessonPlayerPage() {
   );
 
   return (
-    <div className="h-full min-h-0 bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* ── Course navbar ── */}
+      <CourseNavbar courseTitle={course?.title} courseSlug={slug} />
 
       {/* ── Lesson controls bar ── */}
       <div className="h-11 shrink-0 border-b border-border bg-background flex items-center px-4 gap-3 z-30">
@@ -323,7 +479,8 @@ export default function LessonPlayerPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Main content */}
         <div className="flex-1 flex flex-col overflow-y-auto">
-          {/* Video / loading state */}
+
+          {/* ── Video area ── */}
           {loading && !lesson ? (
             <Skeleton className="aspect-video w-full shrink-0" />
           ) : loading ? (
@@ -331,12 +488,35 @@ export default function LessonPlayerPage() {
               <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
             </div>
           ) : lesson?.type === "video" ? (
-            lesson.videoUrl?.includes("youtube") || lesson.videoUrl?.includes("vimeo")
-              ? <div className="aspect-video bg-black w-full shrink-0">
-                  <iframe src={lesson.videoUrl} className="w-full h-full" allowFullScreen />
+            isEmbeddedProvider
+              ? (
+                // ── YouTube / Vimeo embed ────────────────────────────
+                <div className="aspect-video bg-black w-full shrink-0 overflow-hidden">
+                  {isYouTubeEmbed ? (
+                    // Thumbnail overlay hides YouTube red play button.
+                    // YT IFrame API fires onEnded to auto-complete the lesson.
+                    <YouTubeThumbnailPlayer
+                      embedUrl={embedUrl}
+                      videoId={youTubeVideoId}
+                      lessonTitle={lesson?.title}
+                      onEnded={() => handleComplete(null)}
+                    />
+                  ) : (
+                    // Vimeo or other — plain iframe
+                    <iframe
+                      src={embedUrl}
+                      className="w-full h-full"
+                      allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                  )}
                 </div>
+              )
               : lesson.videoUrl
-                ? <div className="aspect-video bg-black w-full shrink-0">
+                ? (
+                  // ── Self-hosted video ──────────────────────────────
+                  <div className="aspect-video bg-black w-full shrink-0">
                     <video
                       src={lesson.videoUrl}
                       controls
@@ -351,12 +531,16 @@ export default function LessonPlayerPage() {
                       onEnded={(e) => handleComplete(Math.floor(e.target.duration ?? 0))}
                     />
                   </div>
-                : <div className="aspect-video bg-secondary w-full shrink-0 flex items-center justify-center">
+                )
+                : (
+                  <div className="aspect-video bg-secondary w-full shrink-0 flex flex-col items-center justify-center gap-2 text-center px-4">
                     <Play className="w-12 h-12 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">Video URL is missing for this lesson.</p>
                   </div>
+                )
           ) : null}
 
-          {/* Article */}
+          {/* ── Article ── */}
           {!loading && lesson?.type === "article" && (
             <div className="m-6 rounded-2xl border border-border bg-card p-6 min-h-48">
               <div className="flex items-center gap-2 mb-4 text-muted-foreground text-sm">
@@ -369,7 +553,7 @@ export default function LessonPlayerPage() {
             </div>
           )}
 
-          {/* Title + meta + actions */}
+          {/* ── Title + meta + actions ── */}
           <div className="px-6 py-5 space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -390,14 +574,14 @@ export default function LessonPlayerPage() {
               )}
             </div>
 
-            {/* Mark complete (non-video or manual) */}
+            {/* Mark complete button (articles / manual) */}
             {!isDone && !loading && lesson?.type !== "video" && (
               <Button variant="gradient" onClick={handleComplete} className="gap-2">
                 <CheckCircle2 className="w-4 h-4" /> Mark as complete
               </Button>
             )}
 
-            {/* Prev / Next buttons */}
+            {/* Prev / Next */}
             <div className="flex items-center gap-3 pt-2 border-t border-border">
               <Button variant="outline" onClick={() => goTo(prev)} disabled={!prev} className="gap-2">
                 <ChevronLeft className="w-4 h-4" /> Previous

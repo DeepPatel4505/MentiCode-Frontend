@@ -1,37 +1,34 @@
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { Plus, Search, BookOpen, Eye, Pencil, Trash2, CheckCircle2 } from "lucide-react";
+import { fetchAdminCourses, publishCourse, deleteCourse, selectAdminCourses, selectAdminLoading } from "@/app/store/slices/adminSlice";
 import { Button } from "@/components/ui/Button";
 import { Input, Card, Badge, Skeleton } from "@/components/ui/index";
 import { useToast } from "@/components/ui/Toast";
 import { cn, getDifficultyConfig, timeAgo } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
 
 export default function AdminCourses() {
+  const dispatch  = useDispatch();
   const { toast } = useToast();
-  const {
-    adminCourses: courses,
-    adminLoading: loading,
-    fetchAdminCourses,
-    publishCourse,
-    deleteCourse,
-  } = useCourse();
+  const courses   = useSelector(selectAdminCourses);
+  const loading   = useSelector(selectAdminLoading);
   const [search,  setSearch]  = useState("");
   const [status,  setStatus]  = useState("");
 
   useEffect(() => {
-    fetchAdminCourses({ ...(status && { status }), ...(search && { search }) });
-  }, [fetchAdminCourses, status, search]);
+    dispatch(fetchAdminCourses({ ...(status && { status }), ...(search && { search }) }));
+  }, [dispatch, status, search]);
 
   const handlePublish = async (id) => {
-    const res = await publishCourse(id);
+    const res = await dispatch(publishCourse(id));
     if (res.meta.requestStatus === "fulfilled") toast({ title: "Published!", type: "success" });
     else toast({ title: "Error", description: res.payload, type: "error" });
   };
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this course? This cannot be undone.")) return;
-    const res = await deleteCourse(id);
+    const res = await dispatch(deleteCourse(id));
     if (res.meta.requestStatus === "fulfilled") toast({ title: "Deleted", type: "info" });
     else toast({ title: "Error", description: res.payload, type: "error" });
   };

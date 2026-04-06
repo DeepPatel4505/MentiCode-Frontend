@@ -1,7 +1,8 @@
 import { Zap, Trophy, Flame, Target, CheckCircle2, Lock } from "lucide-react";
+import { useSelector } from "react-redux";
+import { selectIsPro } from "@/app/store/slices/authSlice";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 
 const CHALLENGES = [
   {
@@ -117,8 +118,7 @@ function ChallengeCard({ challenge, isPro }) {
 }
 
 export default function WeeklyChallenges() {
-  const { user } = useAuth();
-  const isPro = user?.plan === "pro";
+  const isPro = useSelector(selectIsPro);
 
   return (
     <div>

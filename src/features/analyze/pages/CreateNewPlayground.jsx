@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/hooks/useAuth.js";
 import { createPlayground, getPlaygrounds } from "../services/analyze.api.js";
 import CreatePlaygroundOptionCard from "../components/createPlayground/CreatePlaygroundOptionCard.jsx";
@@ -325,182 +325,165 @@ export default function CreateNewPlayground() {
     };
 
     return (
-            <main className="min-h-screen bg-[#0f131b] px-4 py-8 text-white sm:px-6 lg:px-10">
-                <div className="mx-auto w-full max-w-4xl">
-                    <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <p className="m-0 text-xs font-semibold uppercase tracking-[0.08em] text-[#9fb1c8]">
-                                Playground Setup
-                            </p>
-                            <h1 className="mt-3 mb-0 font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-                                Create a New Playground
-                            </h1>
-                        </div>
+        <main className="min-h-screen bg-[hsl(240_10%_4%)] px-4 py-8 text-white sm:px-6 lg:px-10">
+            <div className="mx-auto w-full max-w-4xl">
+                <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-neutral-600">
+                            Playground Setup
+                        </p>
+                        <h1 className="mt-2 mb-0 text-2xl font-semibold tracking-tight text-white">
+                            Create a New Playground
+                        </h1>
+                    </div>
 
-                        <div className="self-start sm:self-auto">
-                            {isLoadingUsage ? (
-                                <div className="rounded-xl border border-white/30 bg-[#141414] px-3 py-2 text-xs text-[#a8b8d0]">
-                                    Loading usage...
-                                </div>
-                            ) : (
-                                <CreatePlaygroundCapacityMeter
-                                    count={activeCount}
-                                    limit={PLAYGROUND_LIMIT}
-                                    compact
-                                />
-                            )}
-                        </div>
-                    </header>
+                    <div className="self-start sm:self-auto">
+                        {isLoadingUsage ? (
+                            <div className="rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-xs text-neutral-500">
+                                Loading usage…
+                            </div>
+                        ) : (
+                            <CreatePlaygroundCapacityMeter
+                                count={activeCount}
+                                limit={PLAYGROUND_LIMIT}
+                                compact
+                            />
+                        )}
+                    </div>
+                </header>
 
-                    <section className="rounded-4xl border-2 border-white bg-[#141414] p-5 shadow-[0_12px_32px_rgba(0,0,0,0.3)] sm:p-7">
-                        <div className="rounded-2xl border border-white bg-[#141414] p-4">
+                <section className="rounded-lg border border-neutral-800 bg-neutral-900/80 p-5 sm:p-6">
+                    {/* Name input */}
+                    <div className="rounded-md border border-neutral-800 bg-neutral-950/60 p-4 mb-5">
+                        <label
+                            htmlFor="playground-name"
+                            className="text-[10px] font-semibold uppercase tracking-[0.1em] text-neutral-600"
+                        >
+                            Playground Name
+                        </label>
+                        <input
+                            id="playground-name"
+                            type="text"
+                            value={playgroundName}
+                            onChange={e => {
+                                setPlaygroundName(e.target.value);
+                                if (error) setError("");
+                            }}
+                            placeholder="Enter a name"
+                            maxLength={80}
+                            className="mt-2 h-9 w-full rounded-md border border-neutral-800 bg-neutral-900 px-3 text-sm text-white placeholder:text-neutral-700 outline-none transition-colors focus:border-violet-500/50"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[28%_1fr]">
+                        <aside className="grid h-fit grid-cols-1 gap-2">
+                            <CreatePlaygroundOptionCard
+                                title="Upload Local Files"
+                                description="Select local files to seed your playground workspace."
+                                value="upload"
+                                selectedValue="upload"
+                                onSelect={() => {}}
+                            />
+                            <CreatePlaygroundOptionCard
+                                title="Import GitHub Repo"
+                                description="GitHub import is coming soon. Use local upload for now."
+                                value="github"
+                                selectedValue="upload"
+                                onSelect={() => {}}
+                            />
+                        </aside>
+
+                        <div className="rounded-md border border-neutral-800 bg-neutral-950/60 p-4">
                             <label
-                                htmlFor="playground-name"
-                                className="text-xs font-semibold uppercase tracking-[0.08em] text-[#9fb1c8]"
+                                htmlFor="playground-upload"
+                                className="inline-flex h-8 cursor-pointer items-center justify-center rounded-md border border-violet-500/50 bg-violet-500/10 px-4 text-xs font-semibold text-violet-300 transition-all hover:bg-violet-500/20 hover:border-violet-500/70"
                             >
-                                Playground Name
+                                Choose Files / Folder
                             </label>
                             <input
-                                id="playground-name"
-                                type="text"
-                                value={playgroundName}
-                                onChange={(event) => {
-                                    setPlaygroundName(event.target.value);
-                                    if (error) {
-                                        setError("");
-                                    }
-                                }}
-                                placeholder="Enter a name"
-                                maxLength={80}
-                                className="mt-2 h-11 w-full rounded-full border border-white/40 bg-[#1a1a1a] px-4 text-sm text-white placeholder:text-[#8fa1ba] outline-none transition-colors duration-200 focus:border-accent-amber"
+                                id="playground-upload"
+                                type="file"
+                                multiple
+                                webkitdirectory=""
+                                directory=""
+                                onChange={handleSelectFiles}
+                                className="sr-only"
                             />
-                        </div>
 
-                        <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[30%_1fr]">
-                            <aside className="grid h-fit grid-cols-1 gap-3">
-                                <CreatePlaygroundOptionCard
-                                    title="Upload Local Files"
-                                    description="Select local files to seed your playground workspace."
-                                    value="upload"
-                                    selectedValue="upload"
-                                    onSelect={() => {}}
-                                />
+                            <p className="mt-3 mb-0 text-xs text-neutral-600">
+                                Supported: text-based source, code, and config files.
+                            </p>
 
-                                <CreatePlaygroundOptionCard
-                                    title="Import GitHub Repo"
-                                    description="GitHub import is coming next. For now use local file upload."
-                                    value="github"
-                                    selectedValue="upload"
-                                    onSelect={() => {}}
-                                />
-                            </aside>
-
-                            <div className="rounded-2xl border border-white bg-[#141414] p-4">
-                                <label
-                                    htmlFor="playground-upload"
-                                    className="inline-flex h-9 cursor-pointer items-center justify-center rounded-md border border-accent-amber bg-accent-amber px-4 text-xs font-semibold text-black transition-all duration-200 hover:bg-[#ffb95e]"
-                                >
-                                    Choose Files/Folder
-                                </label>
-                                <input
-                                    id="playground-upload"
-                                    type="file"
-                                    multiple
-                                    webkitdirectory=""
-                                    directory=""
-                                    onChange={handleSelectFiles}
-                                    className="sr-only"
-                                />
-
-                                <p className="mt-3 mb-0 text-xs text-[#9fb1c8]">
-                                    Supported: text-based source/code/config files.
+                            {!!detectedFolderName && (
+                                <p className="mt-2 mb-0 text-xs text-neutral-300">
+                                    Folder: <span className="font-semibold">{detectedFolderName}</span>
                                 </p>
+                            )}
+                            {detectedFileCount > 0 && (
+                                <p className="mt-1 mb-0 text-xs text-neutral-500">
+                                    {detectedFileCount} files detected
+                                </p>
+                            )}
+                            {skippedFileCount > 0 && (
+                                <p className="mt-1 mb-0 text-xs text-amber-400">
+                                    {skippedFileCount} files skipped (unsupported)
+                                </p>
+                            )}
+                            {uploadWarning && (
+                                <p className="mt-2 mb-0 rounded-md border border-amber-500/30 bg-amber-500/8 px-2 py-1.5 text-xs text-amber-300">
+                                    {uploadWarning}
+                                </p>
+                            )}
 
-                                {!!detectedFolderName && (
-                                    <p className="mt-2 mb-0 text-xs text-[#e9f0ff]">
-                                        Folder detected: <span className="font-semibold">{detectedFolderName}</span>
+                            {isReadingFiles && (
+                                <div className="mt-3 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2.5">
+                                    <p className="m-0 text-xs text-neutral-400">
+                                        Reading files… {readingProgress.processed}/{readingProgress.total}
                                     </p>
-                                )}
-
-                                {detectedFileCount > 0 && (
-                                    <p className="mt-1 mb-0 text-xs text-[#9fb1c8]">
-                                        Files detected: {detectedFileCount}
-                                    </p>
-                                )}
-
-                                {skippedFileCount > 0 && (
-                                    <p className="mt-1 mb-0 text-xs text-amber-300">
-                                        Skipped files: {skippedFileCount}
-                                    </p>
-                                )}
-
-                                {uploadWarning && (
-                                    <p className="mt-2 mb-0 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-200">
-                                        {uploadWarning}
-                                    </p>
-                                )}
-
-                                {isReadingFiles && (
-                                    <div className="mt-3 rounded-xl border border-white/20 bg-[#1a1a1a] px-3 py-2">
-                                        <p className="m-0 text-xs text-[#d6e2f5]">
-                                            Reading files... {readingProgress.processed}/{readingProgress.total}
-                                        </p>
-                                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                                            <div
-                                                className="h-full rounded-full bg-accent-amber transition-all duration-200"
-                                                style={{
-                                                    width: `${readingProgress.total ? (readingProgress.processed / readingProgress.total) * 100 : 0}%`,
-                                                }}
-                                            />
-                                        </div>
+                                    <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-neutral-800">
+                                        <div
+                                            className="h-full rounded-full bg-violet-500 transition-all duration-200"
+                                            style={{ width: `${readingProgress.total ? (readingProgress.processed / readingProgress.total) * 100 : 0}%` }}
+                                        />
                                     </div>
-                                )}
-
-                                <div className="mt-4">
-                                    <CreatePlaygroundUploadPreview
-                                        files={uploadedFiles}
-                                        isReading={isReadingFiles}
-                                        detectedFileCount={detectedFileCount}
-                                    />
                                 </div>
+                            )}
+
+                            <div className="mt-4">
+                                <CreatePlaygroundUploadPreview
+                                    files={uploadedFiles}
+                                    isReading={isReadingFiles}
+                                    detectedFileCount={detectedFileCount}
+                                />
                             </div>
                         </div>
+                    </div>
 
-                        {error ? (
-                            <p className="mt-4 mb-0 rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                                {error}
-                            </p>
-                        ) : null}
+                    {error && (
+                        <p className="mt-4 mb-0 rounded-md border border-red-500/30 bg-red-500/8 px-4 py-3 text-sm text-red-400">
+                            {error}
+                        </p>
+                    )}
 
-                        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                            <button
-                                type="button"
-                                onClick={handleCancel}
-                                className="h-11 rounded-full border-2 border-white px-6 text-sm font-semibold text-white transition-all duration-200 hover:border-accent-amber hover:text-accent-amber"
-                            >
-                                Back
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={handleCreate}
-                                disabled={
-                                    !hasCapacity ||
-                                    isLoadingUsage ||
-                                    isSubmitting ||
-                                    isReadingFiles ||
-                                    !uploadedFiles.length
-                                }
-                                className="h-11 rounded-full border-2 border-[#ffb95e] bg-accent-amber px-6 text-sm font-semibold text-black transition-all duration-200 hover:bg-[#ffb95e] disabled:cursor-not-allowed disabled:border-white/40 disabled:bg-white/20 disabled:text-white/60"
-                            >
-                                {isSubmitting
-                                    ? "Creating Playground..."
-                                    : "Continue to Editor"}
-                            </button>
-                        </div>
-                    </section>
-                </div>
-            </main>
-
+                    <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        <button
+                            type="button"
+                            onClick={handleCancel}
+                            className="h-9 rounded-md border border-neutral-700 px-5 text-sm font-medium text-neutral-400 transition-all hover:border-neutral-600 hover:text-neutral-200"
+                        >
+                            Back
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleCreate}
+                            disabled={!hasCapacity || isLoadingUsage || isSubmitting || isReadingFiles || !uploadedFiles.length}
+                            className="h-9 rounded-md border border-violet-500/50 bg-violet-500/10 px-5 text-sm font-semibold text-violet-300 transition-all hover:bg-violet-500/20 hover:border-violet-500/70 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            {isSubmitting ? "Creating…" : "Continue to Editor"}
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </main>
     );
 }

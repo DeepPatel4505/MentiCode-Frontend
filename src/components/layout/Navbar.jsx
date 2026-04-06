@@ -1,13 +1,14 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Zap, LogOut, Sun, Moon, User, LayoutDashboard, ChevronDown, Trophy, Flame } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { Zap, LogOut, Sun, Moon, User, LayoutDashboard, ChevronDown, Trophy } from "lucide-react";
+import { selectUser, selectIsAuth, selectIsAdmin, selectIsPro, logoutUser } from "@/app/store/slices/authSlice";
+import { toggleTheme, selectTheme } from "@/app/store/slices/uiSlice";
 import { Button } from "@/components/ui/Button";
 import { Avatar, Badge } from "@/components/ui/index";
 import { XpBar } from "@/components/ui/StreakWidget";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/features/auth/hooks/useAuth";
-import useCourse from "@/features/course/hooks/useCourse";
+import { useState } from "react";
 
 const NAV = [
   { to: "/courses",     label: "Courses" },
@@ -17,24 +18,19 @@ const NAV = [
 ];
 
 export default function Navbar() {
+  const dispatch  = useDispatch();
   const navigate  = useNavigate();
   const location  = useLocation();
   const { toast } = useToast();
-  const { user, handleLogout: logout } = useAuth();
-  const { streak } = useCourse();
-  const isAuth = !!user;
-  const isAdmin = user?.role === "admin";
-  const isPro = user?.plan === "pro";
-  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
+  const user      = useSelector(selectUser);
+  const isAuth    = useSelector(selectIsAuth);
+  const isAdmin   = useSelector(selectIsAdmin);
+  const isPro     = useSelector(selectIsPro);
+  const theme     = useSelector(selectTheme);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("light", theme === "light");
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
   const handleLogout = async () => {
-    await logout();
+    await dispatch(logoutUser());
     navigate("/login");
     toast({ title: "Logged out", type: "info" });
     setOpen(false);
@@ -81,24 +77,11 @@ export default function Navbar() {
 
           {/* Right */}
           <div className="flex items-center gap-2">
-            {/* Streak */}
-            {isAuth && streak > 0 && (
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20" title={`${streak}-day streak!`}>
-                <Flame className={cn("w-4 h-4 text-orange-400", streak >= 7 && "fire-pulse")} />
-                <span className="text-sm font-bold text-orange-400">{streak}</span>
-              </div>
-            )}
-
             {/* XP bar compact */}
             {isAuth && user && <div className="hidden lg:block"><XpBar compact /></div>}
 
             {/* Theme */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
-              className="rounded-xl"
-            >
+            <Button variant="ghost" size="icon" onClick={() => dispatch(toggleTheme())} className="rounded-xl">
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
 
@@ -129,11 +112,6 @@ export default function Navbar() {
                           </div>
                         </div>
                         <XpBar />
-                        {streak > 0 && (
-                          <div className="flex items-center gap-1.5 text-orange-400 text-xs font-medium">
-                            <Flame className="w-3.5 h-3.5" /> {streak}-day streak
-                          </div>
-                        )}
                         {isPro && <Badge variant="pro">PRO</Badge>}
                       </div>
                       <div className="p-1.5">

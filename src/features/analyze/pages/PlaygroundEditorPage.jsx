@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck, ArrowLeft, PanelLeft, PanelRight } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { getNodeByPath, updateFileNode } from "../utils/fileTree";
 import { createWS } from "../services/analyze.api";
 import { useAuth } from "../../auth/hooks/useAuth";
@@ -134,10 +134,57 @@ function getErrorMessage(error) {
     return error.message || "Something went wrong";
 }
 
+function getFindingLineRange(finding) {
+    const lineRange = Array.isArray(finding?.line_range)
+        ? finding.line_range
+        : null;
+
+    if (lineRange && lineRange.length >= 2) {
+        const start = Number(lineRange[0]);
+        const end = Number(lineRange[1]);
+
+        if (Number.isInteger(start) && start > 0) {
+            const safeEnd = Number.isInteger(end) && end >= start ? end : start;
+            return [start, safeEnd];
+        }
+    }
+
+    const singleLine = Number(
+        finding?.line_number ??
+            finding?.line ??
+            finding?.start_line,
+    );
+
+    if (Number.isInteger(singleLine) && singleLine > 0) {
+        const fallbackEnd = Number(finding?.end_line);
+        const safeEnd =
+            Number.isInteger(fallbackEnd) && fallbackEnd >= singleLine
+                ? fallbackEnd
+                : singleLine;
+        return [singleLine, safeEnd];
+    }
+
+    if (typeof finding?.line_range === "string") {
+        const matched = finding.line_range.match(/\d+/g) || [];
+        if (matched.length > 0) {
+            const start = Number(matched[0]);
+            const end = Number(matched[1] ?? matched[0]);
+            if (Number.isInteger(start) && start > 0) {
+                const safeEnd = Number.isInteger(end) && end >= start ? end : start;
+                return [start, safeEnd];
+            }
+        }
+    }
+
+    return null;
+}
+
 const PlaygroundEditorPage = () => {
     const { id: playgroundId } = useParams();
+    const [searchParams] = useSearchParams();
     const { accessToken } = useAuth();
     const queryClient = useQueryClient();
+    const targetFileId = searchParams.get("fileId");
 
     const [auditTab, setAuditTab] = useState("All");
     const [filetree, setFiletree] = useState({});
@@ -309,27 +356,31 @@ const PlaygroundEditorPage = () => {
             return;
         }
 
-        const [start, end] = finding?.line_range || [];
-
-        const lineNumber = Number(start);
-        if (!Number.isInteger(lineNumber) || lineNumber < 1) {
+        const lineRange = getFindingLineRange(finding);
+        if (!lineRange) {
             return;
         }
 
-        const parsedEnd = Number(end);
-        const endLine =
-            Number.isInteger(parsedEnd) && parsedEnd >= lineNumber
-                ? parsedEnd
-                : lineNumber;
-        const severity = (finding?.severity || "minor").toLowerCase();
-        const severityColorMap = {
-            critical: "rgba(248, 113, 113, 0.8)",
-            major: "rgba(250, 204, 21, 0.85)",
-            minor: "rgba(96, 165, 250, 0.8)",
+        const [lineNumber, endLine] = lineRange;
+        const category = (finding?.category || "style").toLowerCase();
+        const categoryColorMap = {
+            bug: "rgba(239, 68, 68, 0.85)",
+            security: "rgba(245, 158, 11, 0.9)",
+            performance: "rgba(59, 130, 246, 0.85)",
+            design: "rgba(139, 92, 246, 0.85)",
+            style: "rgba(16, 185, 129, 0.85)",
         };
-        const safeSeverity = severityColorMap[severity] ? severity : "minor";
+        const safeCategory = categoryColorMap[category] ? category : "style";
 
         editorRef.current.revealLineInCenter(lineNumber);
+
+        const selectionRange = new monacoRef.current.Range(
+            lineNumber,
+            1,
+            endLine + 1,
+            1,
+        );
+        editorRef.current.setSelection(selectionRange);
 
         highlightDecorationIdsRef.current = editorRef.current.deltaDecorations(
             highlightDecorationIdsRef.current,
@@ -343,10 +394,10 @@ const PlaygroundEditorPage = () => {
                     ),
                     options: {
                         isWholeLine: true,
-                        className: `lint-highlight lint-highlight--${safeSeverity}`,
-                        linesDecorationsClassName: `lint-gutter lint-gutter--${safeSeverity}`,
+                        className: `lint-highlight lint-highlight--${safeCategory}`,
+                        linesDecorationsClassName: `lint-gutter lint-gutter--${safeCategory}`,
                         overviewRuler: {
-                            color: severityColorMap[safeSeverity],
+                            color: categoryColorMap[safeCategory],
                             position:
                                 monacoRef.current.editor.OverviewRulerLane
                                     .Right,
@@ -355,8 +406,6 @@ const PlaygroundEditorPage = () => {
                 },
             ],
         );
-
-        editorRef.current.setPosition({ lineNumber, column: 1 });
         editorRef.current.focus();
     };
 
@@ -427,6 +476,13 @@ const PlaygroundEditorPage = () => {
         setCurrentJobId(storedJobId);
     }, [fileId]);
 
+    // Jump to a specific file when opened from My Analysis page
+    useEffect(() => {
+        if (!targetFileId || !filePathToIdMap || Object.keys(filePathToIdMap).length === 0) return;
+        const entry = Object.entries(filePathToIdMap).find(([, id]) => id === targetFileId);
+        if (entry) setActiveFile(entry[0]);
+    }, [targetFileId, filePathToIdMap]);
+
     useEffect(() => {
         if (!currentJobId || !accessToken) {
             return;
@@ -472,15 +528,12 @@ const PlaygroundEditorPage = () => {
     }, [currentJobId, accessToken, queryClient]);
 
     return (
-        <div className="h-screen flex flex-col bg-[#0d1117] text-white overflow-hidden">
-            {/* MAIN CONTENT AREA */}
+        <div className="h-screen flex flex-col bg-[hsl(240_10%_4%)] text-neutral-200 overflow-hidden">
             <div className="flex-1 flex overflow-hidden">
                 {/* LEFT SIDEBAR - EXPLORER */}
                 <div
-                    className={`transition-all duration-300 ease-out border-r border-white/10 overflow-hidden h-full ${
-                        isExplorerOpen
-                            ? "w-60 opacity-100"
-                            : "w-0 opacity-0"
+                    className={`transition-all duration-200 border-r border-white/[0.06] overflow-hidden h-full ${
+                        isExplorerOpen ? "w-60 opacity-100" : "w-0 opacity-0"
                     }`}
                     style={{
                         minWidth: isExplorerOpen ? "240px" : "0px",
@@ -488,21 +541,21 @@ const PlaygroundEditorPage = () => {
                     }}
                 >
                     {isExplorerOpen && (
-                        <div className="h-full flex flex-col">
-                            <div className="px-4 py-3 border-b border-white/10 bg-[#0d1117] shrink-0">
-                                <p className="text-[11px] uppercase tracking-wide text-[#64748b]">
+                        <div className="h-full flex flex-col bg-[hsl(240_8%_6%)]">
+                            <div className="px-4 py-3 border-b border-white/[0.06] shrink-0">
+                                <p className="text-[10px] uppercase tracking-[0.08em] text-neutral-600 font-semibold">
                                     Playground
                                 </p>
                                 <div className="mt-1 flex items-center gap-2 min-w-0">
                                     <Link
                                         to="/analyze/playground"
-                                        className="shrink-0 text-[#94a3b8] hover:text-white transition-colors p-1 -ml-1"
+                                        className="shrink-0 text-neutral-600 hover:text-neutral-300 transition-colors p-1 -ml-1"
                                         title="Back to Playgrounds"
                                         aria-label="Back to Playgrounds"
                                     >
-                                        <ArrowLeft size={16} />
+                                        <ArrowLeft size={15} />
                                     </Link>
-                                    <h2 className="text-sm font-semibold text-white truncate" title={playground?.name || "Playground"}>
+                                    <h2 className="text-sm font-medium text-neutral-200 truncate" title={playground?.name || "Playground"}>
                                         {playground?.name || "Playground"}
                                     </h2>
                                 </div>
@@ -523,44 +576,33 @@ const PlaygroundEditorPage = () => {
                 {/* CENTER AREA - EDITOR WITH TAB */}
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {/* FILE TAB/HEADER */}
-                    <div className="flex items-center h-10 border-b border-white/10 bg-[#0d1117] px-4 gap-3">
+                    <div className="flex items-center h-10 border-b border-white/[0.06] bg-[hsl(240_8%_6%)] px-4 gap-3">
                         <div className="flex-1 min-w-0 overflow-x-auto">
                             {activeFile ? (
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-t bg-white/5 border border-white/10 whitespace-nowrap">
-                                    <span className="text-xs font-medium text-[#94a3b8]">
+                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-t bg-[hsl(240_10%_4%)] border border-white/[0.06] border-b-transparent whitespace-nowrap">
+                                    <span className="text-xs font-medium text-neutral-400">
                                         {activeFile.split("/").pop()}
                                     </span>
                                 </div>
                             ) : (
-                                <span className="text-xs text-[#475569]">
-                                    No file selected
-                                </span>
+                                <span className="text-xs text-neutral-700">No file selected</span>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                             <button
                                 onClick={() => setIsExplorerOpen(!isExplorerOpen)}
-                                className={`p-1.5 rounded transition-colors ${
-                                    isExplorerOpen
-                                        ? "bg-white/10 text-white"
-                                        : "text-[#94a3b8] hover:text-white"
-                                }`}
+                                className={`p-1.5 rounded transition-colors ${isExplorerOpen ? "bg-white/8 text-neutral-300" : "text-neutral-600 hover:text-neutral-300"}`}
                                 title={isExplorerOpen ? "Hide Explorer" : "Show Explorer"}
                             >
-                                <PanelLeft size={16} />
+                                <PanelLeft size={15} />
                             </button>
-
                             <button
                                 onClick={() => setIsAuditOpen(!isAuditOpen)}
-                                className={`p-1.5 rounded transition-colors ${
-                                    isAuditOpen
-                                        ? "bg-white/10 text-white"
-                                        : "text-[#94a3b8] hover:text-white"
-                                }`}
+                                className={`p-1.5 rounded transition-colors ${isAuditOpen ? "bg-white/8 text-neutral-300" : "text-neutral-600 hover:text-neutral-300"}`}
                                 title={isAuditOpen ? "Hide Audit Panel" : "Show Audit Panel"}
                             >
-                                <PanelRight size={16} />
+                                <PanelRight size={15} />
                             </button>
                         </div>
                     </div>
@@ -582,10 +624,8 @@ const PlaygroundEditorPage = () => {
 
                 {/* RIGHT SIDEBAR - AUDIT PANEL */}
                 <div
-                    className={`transition-all duration-300 ease-out border-l border-white/10 overflow-hidden h-full ${
-                        isAuditOpen
-                            ? "w-76 opacity-100"
-                            : "w-0 opacity-0"
+                    className={`transition-all duration-200 border-l border-white/[0.06] overflow-hidden h-full ${
+                        isAuditOpen ? "w-76 opacity-100" : "w-0 opacity-0"
                     }`}
                     style={{
                         minWidth: isAuditOpen ? "304px" : "0px",
@@ -611,17 +651,14 @@ const PlaygroundEditorPage = () => {
             </div>
 
             {/* FOOTER */}
-            <footer className="flex justify-between items-center px-4 py-2 border-t border-white/10 text-xs text-[#64748b] h-6">
+            <footer className="flex justify-between items-center px-4 py-1.5 border-t border-white/[0.06] text-xs text-neutral-700 h-7 bg-[hsl(240_8%_6%)]">
                 <div className="flex gap-4">
-                    <span className="flex items-center gap-1">
-                        <ShieldCheck size={14} className="text-green-400" />
+                    <span className="flex items-center gap-1.5">
+                        <ShieldCheck size={13} className="text-emerald-500" />
                         Standard
                     </span>
                 </div>
-
-                <span className="text-amber-400 font-medium">
-                    Menti Engine v3.0
-                </span>
+                <span className="text-violet-500 font-medium">Menti Engine v3.0</span>
             </footer>
         </div>
     );

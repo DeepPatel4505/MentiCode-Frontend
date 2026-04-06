@@ -1,6 +1,7 @@
 // CourseDetailPage.jsx
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import {
   ChevronDown, ChevronRight, Zap, Users,
   CheckCircle2, Play, FileText, Paperclip, Lock,
@@ -9,11 +10,18 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, Progress, Badge, Separator, Skeleton } from "@/components/ui/index";
+import CourseNavbar from "@/components/layout/CourseNavbar";
+import {
+  fetchCourseBySlug, selectCurrentCourse, selectCoursesLoading,
+} from "@/app/store/slices/courseSlice";
+import {
+  fetchEnrollment, fetchCourseProgress, enrollInCourse, skipSection,
+  selectEnrollment, selectCourseProgress, selectEnrollLoading,
+} from "@/app/store/slices/enrollSlice";
+import { selectIsAuth, selectIsPro } from "@/app/store/slices/authSlice";
 import { useToast } from "@/components/ui/Toast";
 import { cn, getDifficultyConfig, formatDuration } from "@/lib/utils";
-import api from "@/lib/api";
-import useCourse from "@/features/course/hooks/useCourse";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import api from "@/lib/axios";
 
 const lessonIcons = { video: Play, article: FileText, attachment: Paperclip };
 
@@ -27,8 +35,49 @@ function PreviewModal({ lesson, allPreviews, onSelect, onClose, onEnroll, isAuth
   }, [onClose]);
 
   const videoUrl = lesson?.videoUrl ?? "";
-  const isYouTube = videoUrl.includes("youtube") || videoUrl.includes("youtu.be");
-  const isVimeo   = videoUrl.includes("vimeo");
+  const normalizeEmbedUrl = (url) => {
+    if (!url) return "";
+    const trimmed = url.trim();
+
+    const withCleanEmbedParams = (embedUrl) => {
+      try {
+        const parsed = new URL(embedUrl);
+        parsed.searchParams.set("rel", "0");
+        parsed.searchParams.set("modestbranding", "1");
+        parsed.searchParams.set("playsinline", "1");
+        parsed.searchParams.set("iv_load_policy", "3");
+        parsed.searchParams.set("controls", "1");
+        return parsed.toString();
+      } catch {
+        return embedUrl;
+      }
+    };
+
+    if (trimmed.includes("youtube.com/watch")) {
+      try {
+        const parsed = new URL(trimmed);
+        const videoId = parsed.searchParams.get("v");
+        if (videoId) return withCleanEmbedParams(`https://www.youtube-nocookie.com/embed/${videoId}`);
+      } catch {
+        return trimmed;
+      }
+    }
+
+    if (trimmed.includes("youtu.be/")) {
+      const videoId = trimmed.split("youtu.be/")[1]?.split("?")[0];
+      if (videoId) return withCleanEmbedParams(`https://www.youtube-nocookie.com/embed/${videoId}`);
+    }
+
+    if (trimmed.includes("youtube.com/embed/")) {
+      return withCleanEmbedParams(trimmed.replace("youtube.com/embed/", "youtube-nocookie.com/embed/"));
+    }
+
+    return trimmed;
+  };
+
+  const embedUrl = normalizeEmbedUrl(videoUrl);
+  const isYouTube = embedUrl.includes("youtube") || embedUrl.includes("youtu.be");
+  const isVimeo   = embedUrl.includes("vimeo");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -47,7 +96,13 @@ function PreviewModal({ lesson, allPreviews, onSelect, onClose, onEnroll, isAuth
         {/* Video */}
         <div className="aspect-video bg-black shrink-0">
           {isYouTube || isVimeo ? (
-            <iframe src={videoUrl} className="w-full h-full" allowFullScreen allow="autoplay" />
+            <iframe
+              src={embedUrl}
+              className="w-full h-full"
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            />
           ) : videoUrl ? (
             <video src={videoUrl} controls autoPlay className="w-full h-full" />
           ) : (
@@ -281,23 +336,16 @@ function SectionRow({ section, courseSlug, enrollment, progress, freeUpToLesson,
 // ── Main page ─────────────────────────────────────────────────
 export default function CourseDetailPage() {
   const { slug }   = useParams();
+  const dispatch   = useDispatch();
   const navigate   = useNavigate();
   const { toast }  = useToast();
-  const { user } = useAuth();
-  const {
-    currentCourse: course,
-    coursesLoading: loading,
-    enrollment,
-    courseProgress: progress,
-    enrollLoading,
-    fetchCourseBySlug,
-    fetchEnrollment,
-    fetchCourseProgress,
-    enrollInCourse,
-    skipSection,
-  } = useCourse();
-  const isAuth = !!user;
-  const isPro = user?.plan === "pro";
+  const course     = useSelector(selectCurrentCourse);
+  const loading    = useSelector(selectCoursesLoading);
+  const enrollment    = useSelector(selectEnrollment);
+  const progress      = useSelector(selectCourseProgress);
+  const enrollLoading = useSelector(selectEnrollLoading);
+  const isAuth     = useSelector(selectIsAuth);
+  const isPro      = useSelector(selectIsPro);
   const [showAllSections, setShowAllSections] = useState(false);
   const [previewLesson, setPreviewLesson] = useState(null);
 
@@ -308,14 +356,14 @@ export default function CourseDetailPage() {
   const openPreview = useCallback((lesson) => setPreviewLesson(lesson), []);
   const closePreview = useCallback(() => setPreviewLesson(null), []);
 
-  useEffect(() => { fetchCourseBySlug(slug); }, [fetchCourseBySlug, slug]);
+  useEffect(() => { dispatch(fetchCourseBySlug(slug)); }, [dispatch, slug]);
 
   useEffect(() => {
     if (course?.id && isAuth) {
-      fetchEnrollment(course.id);
-      fetchCourseProgress(course.id);
+      dispatch(fetchEnrollment(course.id));
+      dispatch(fetchCourseProgress(course.id));
     }
-  }, [course?.id, fetchCourseProgress, fetchEnrollment, isAuth]);
+  }, [dispatch, course?.id, isAuth]);
 
   // ── Auto-redirect enrolled users to their current lesson ──
   useEffect(() => {
@@ -328,7 +376,7 @@ export default function CourseDetailPage() {
 
   const handleEnroll = async () => {
     if (!isAuth) { navigate("/register"); return; }
-    const res = await enrollInCourse(course.id);
+    const res = await dispatch(enrollInCourse(course.id));
     if (res.meta.requestStatus === "fulfilled") {
       toast({ title: "Enrolled!", description: "Start learning now.", type: "success" });
     } else {
@@ -338,12 +386,13 @@ export default function CourseDetailPage() {
   };
 
   const handleSkip = async (sectionId) => {
-    const res = await skipSection({ courseId: course.id, sectionId });
+    const res = await dispatch(skipSection({ courseId: course.id, sectionId }));
     if (res.meta.requestStatus === "fulfilled") toast({ title: "Section skipped", type: "info" });
   };
 
   if (loading || !course) return (
     <div className="min-h-screen bg-background">
+      <CourseNavbar />
       {/* Hero skeleton */}
       <div className="bg-secondary/30 py-10 px-4">
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -390,6 +439,7 @@ export default function CourseDetailPage() {
     const firstLesson = course.sections?.[0]?.lessons?.[0];
     return (
       <div className="min-h-screen bg-background">
+        <CourseNavbar courseTitle={course.title} />
         {/* Enrolled hero */}
         <div className="bg-gradient-to-b from-[#0f172a] to-background border-b border-border">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-4">
@@ -471,6 +521,7 @@ export default function CourseDetailPage() {
           isAuth={isAuth}
         />
       )}
+      <CourseNavbar courseTitle={course.title} />
       {/* ── Hero banner ── */}
       <div className="bg-gradient-to-b from-[#0f172a] to-background border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">

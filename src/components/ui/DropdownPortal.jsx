@@ -116,7 +116,7 @@ export default function DropdownPortal({ anchorRef, isOpen, onClose, children })
       ref={menuRef}
       role="menu"
       aria-orientation="vertical"
-      className="fixed z-[9999] w-44 rounded-xs border border-border bg-bg-sidebar p-1 shadow-lg origin-top-right animate-scale-in"
+      className="fixed z-[9999] w-44 rounded-md border border-white/15 bg-card opacity-100 p-1 shadow-[0_14px_36px_rgba(0,0,0,0.55)] origin-top-right animate-scale-in"
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,

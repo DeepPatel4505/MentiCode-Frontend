@@ -1,53 +1,31 @@
-import axios from "axios";
+/**
+ * lib/api.js
+ * Re-exports the configured axios instance from lib/axios.js and adds
+ * the helper functions that the analyze feature services require.
+ */
+import api from "./axios";
 
-axios.defaults.withCredentials = true;
+/**
+ * Returns the stored access token (used for WebSocket auth in analyze).
+ */
+export function getApiAuthToken() {
+  return localStorage.getItem("accessToken") ?? null;
+}
 
-export const API_BASE_URL =
-    import.meta.env.VITE_API_URL || "/api/v1";
-
-let authToken = null;
-
-export const setApiAuthToken = (token) => {
-    authToken = token || null;
-};
-
-export const getApiAuthToken = () => authToken;
-
-export const getWsUrl = (path = "/ws") => {
-    const apiUrl = new URL(API_BASE_URL, window.location.origin);
-    const wsProtocol = apiUrl.protocol === "https:" ? "wss:" : "ws:";
-    return `${wsProtocol}//${apiUrl.host}${path}`;
-};
-
-const api = axios.create({
-    baseURL: API_BASE_URL,
-    withCredentials: true,
-});
-
-api.interceptors.request.use(
-    (config) => {
-        const nextConfig = { ...config };
-        nextConfig.headers = nextConfig.headers || {};
-
-        if (authToken && !nextConfig.headers.Authorization) {
-            nextConfig.headers.Authorization = `Bearer ${authToken}`;
-        }
-        console.log("Making API request to:", nextConfig.url);
-
-        return nextConfig;
-    },
-    (error) => Promise.reject(error),
-);
-
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        console.error("API request failed:", error);
-        const normalizedError =
-            error?.response?.data ||
-            new Error(error?.message || "Request failed");
-        return Promise.reject(normalizedError);
-    },
-);
+/**
+ * Converts an HTTP/HTTPS base URL to a WebSocket ws/wss URL.
+ * Falls back to window.location.host if no env var is set.
+ *
+ * @param {string} path - e.g. "/ws"
+ * @returns {string}    - e.g. "ws://localhost:8001/ws"
+ */
+export function getWsUrl(path = "") {
+  const base =
+    import.meta.env.VITE_WS_URL ??
+    (window.location.protocol === "https:" ? "wss" : "ws") +
+      "://" +
+      window.location.host;
+  return `${base}${path}`;
+}
 
 export default api;

@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 import { ChevronLeft, Plus, Pencil, Trash2, Eye, Save, Zap, GripVertical } from "lucide-react";
+import {
+  createCourse, updateCourse, createSection, createLesson, createGameLevel,
+  selectAdminSaving, selectAdminError, clearError,
+} from "@/app/store/slices/adminSlice";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select, Card, CardContent, Field, Badge, Skeleton } from "@/components/ui/index";
 import { useToast } from "@/components/ui/Toast";
-import api from "@/lib/api";
+import api from "@/lib/axios";
 import { cn } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
 
 // ── Modal wrapper ─────────────────────────────────────────────
 function Modal({ title, onClose, children }) {
@@ -26,12 +30,12 @@ function Modal({ title, onClose, children }) {
 
 // ── Section modal ─────────────────────────────────────────────
 function SectionModal({ courseId, onClose, onCreated }) {
-  const { createSection } = useCourse();
+  const dispatch = useDispatch();
   const { toast } = useToast();
   const { register, handleSubmit, formState: { errors } } = useForm({ defaultValues: { type: "video_section", isSkippable: true, order: 1 } });
 
   const onSubmit = async (data) => {
-    const res = await createSection({ courseId, data: { ...data, order: Number(data.order) } });
+    const res = await dispatch(createSection({ courseId, data: { ...data, order: Number(data.order) } }));
     if (res.meta.requestStatus === "fulfilled") {
       toast({ title: "Section created", type: "success" });
       onCreated(res.payload);
@@ -69,12 +73,12 @@ function SectionModal({ courseId, onClose, onCreated }) {
 
 // ── Lesson modal ──────────────────────────────────────────────
 function LessonModal({ sectionId, onClose, onCreated }) {
-  const { createLesson } = useCourse();
+  const dispatch = useDispatch();
   const { toast } = useToast();
   const { register, handleSubmit } = useForm({ defaultValues: { type: "video", order: 1, duration: 0, isPreview: false } });
 
   const onSubmit = async (data) => {
-    const res = await createLesson({ sectionId, data: { ...data, order: Number(data.order), duration: Number(data.duration) } });
+    const res = await dispatch(createLesson({ sectionId, data: { ...data, order: Number(data.order), duration: Number(data.duration) } }));
     if (res.meta.requestStatus === "fulfilled") {
       toast({ title: "Lesson created", type: "success" });
       onCreated && onCreated(res.payload);
@@ -121,7 +125,7 @@ function LessonModal({ sectionId, onClose, onCreated }) {
 
 // ── Level modal ───────────────────────────────────────────────
 function LevelModal({ sectionId, onClose, onCreated }) {
-  const { createGameLevel } = useCourse();
+  const dispatch = useDispatch();
   const { toast } = useToast();
   const { register, handleSubmit } = useForm({
     defaultValues: { type: "quiz", order: 1, xpReward: 10, passingScore: 70, cooldownMinutes: 5, isPublished: false, config: '{"questions":[]}' },
@@ -130,10 +134,10 @@ function LevelModal({ sectionId, onClose, onCreated }) {
   const onSubmit = async (data) => {
     let config = {};
     try { config = JSON.parse(data.config); } catch (_) { config = { questions: [] }; }
-    const res = await createGameLevel({
+    const res = await dispatch(createGameLevel({
       sectionId,
       data: { ...data, order: Number(data.order), xpReward: Number(data.xpReward), passingScore: Number(data.passingScore), cooldownMinutes: Number(data.cooldownMinutes), config },
-    });
+    }));
     if (res.meta.requestStatus === "fulfilled") {
       toast({ title: "Level created", type: "success" });
       onCreated && onCreated(res.payload);
@@ -307,9 +311,10 @@ function SectionRow({ section, courseId, onRefresh }) {
 // ── Main editor ───────────────────────────────────────────────
 export default function AdminCourseEditor() {
   const { id }    = useParams();
+  const dispatch  = useDispatch();
   const navigate  = useNavigate();
   const { toast } = useToast();
-  const { createCourse, updateCourse, adminSaving: saving } = useCourse();
+  const saving    = useSelector(selectAdminSaving);
   const isEdit    = !!id;
 
   const [course,   setCourse]   = useState(null);
@@ -356,11 +361,11 @@ export default function AdminCourseEditor() {
     };
 
     if (isEdit) {
-      const res = await updateCourse({ id, data: payload });
+      const res = await dispatch(updateCourse({ id, data: payload }));
       if (res.meta.requestStatus === "fulfilled") toast({ title: "Course updated!", type: "success" });
       else toast({ title: "Error", description: res.payload, type: "error" });
     } else {
-      const res = await createCourse(payload);
+      const res = await dispatch(createCourse(payload));
       if (res.meta.requestStatus === "fulfilled") {
         toast({ title: "Course created!", type: "success" });
         navigate(`/admin/courses/${res.payload.id}/edit`);

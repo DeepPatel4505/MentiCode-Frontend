@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Map, Lock, CheckCircle2, SkipForward, BookOpen,
   Zap, ArrowLeft, Users, Play,
@@ -7,10 +8,13 @@ import {
 import Shell from "@/components/layout/Shell";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, Progress, Badge, Skeleton } from "@/components/ui/index";
+import {
+  fetchRoadmapBySlug, fetchRoadmapEnrollment, enrollInRoadmap, skipTrackNode,
+  selectCurrentRoadmap, selectRoadmapEnrollment, selectRoadmapLoading, selectRoadmapEnrollLoading,
+} from "@/app/store/slices/roadmapSlice";
+import { selectIsAuth, selectIsPro } from "@/app/store/slices/authSlice";
 import { useToast } from "@/components/ui/Toast";
 import { cn, getDifficultyConfig } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 
 // ── Node status config ────────────────────────────────────────
 const NODE_STATUS = {
@@ -136,28 +140,21 @@ function CourseNode({ node, idx, total, status, np, isEnrolled, onSkip }) {
 // ── Main page ─────────────────────────────────────────────────
 export default function RoadmapDetailPage() {
   const { slug }    = useParams();
+  const dispatch    = useDispatch();
   const navigate    = useNavigate();
   const { toast }   = useToast();
-  const { user } = useAuth();
 
-  const {
-    currentRoadmap: roadmap,
-    roadmapEnrollment: enrollment,
-    roadmapLoading: loading,
-    roadmapEnrollLoading: enrollLoading,
-    fetchRoadmapBySlug,
-    fetchRoadmapEnrollment,
-    enrollInRoadmap,
-    skipTrackNode,
-  } = useCourse();
+  const roadmap       = useSelector(selectCurrentRoadmap);
+  const enrollment    = useSelector(selectRoadmapEnrollment);
+  const loading       = useSelector(selectRoadmapLoading);
+  const enrollLoading = useSelector(selectRoadmapEnrollLoading);
+  const isAuth        = useSelector(selectIsAuth);
+  const isPro         = useSelector(selectIsPro);
 
-  const isAuth = !!user;
-  const isPro = user?.plan === "pro";
-
-  useEffect(() => { fetchRoadmapBySlug(slug); }, [fetchRoadmapBySlug, slug]);
+  useEffect(() => { dispatch(fetchRoadmapBySlug(slug)); }, [dispatch, slug]);
   useEffect(() => {
-    if (roadmap?.id && isAuth) fetchRoadmapEnrollment(roadmap.id);
-  }, [fetchRoadmapEnrollment, roadmap?.id, isAuth]);
+    if (roadmap?.id && isAuth) dispatch(fetchRoadmapEnrollment(roadmap.id));
+  }, [dispatch, roadmap?.id, isAuth]);
 
   const courses    = roadmap?.courses ?? [];
   const isEnrolled = !!enrollment;
@@ -172,7 +169,7 @@ export default function RoadmapDetailPage() {
   const handleEnroll = async () => {
     if (!isAuth)  { navigate("/register"); return; }
     if (!isPro)   { navigate("/pricing"); return; }
-    const res = await enrollInRoadmap({ roadmapId: roadmap.id });
+    const res = await dispatch(enrollInRoadmap({ roadmapId: roadmap.id }));
     if (res.meta.requestStatus === "fulfilled") {
       toast({ title: "Enrolled in roadmap!", type: "success" });
     } else {
@@ -181,13 +178,13 @@ export default function RoadmapDetailPage() {
   };
 
   const handleSkipNode = async (nodeId) => {
-    const res = await skipTrackNode({ roadmapId: roadmap.id, nodeId });
+    const res = await dispatch(skipTrackNode({ roadmapId: roadmap.id, nodeId }));
     if (res.meta.requestStatus === "fulfilled") toast({ title: "Course skipped", type: "info" });
     else toast({ title: "Cannot skip", description: res.payload, type: "error" });
   };
 
   if (loading || !roadmap) return (
-    <Shell showNavbar={false}>
+    <Shell>
       <div className="space-y-6">
         <Skeleton className="h-48 rounded-2xl" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -202,7 +199,7 @@ export default function RoadmapDetailPage() {
   );
 
   return (
-    <Shell showNavbar={false}>
+    <Shell>
       {/* ── Hero ── */}
       <div className="relative mb-8 rounded-2xl overflow-hidden border border-primary/20 bg-gradient-to-br from-blue-950/60 via-background to-background">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-600/15 via-transparent to-transparent pointer-events-none" />

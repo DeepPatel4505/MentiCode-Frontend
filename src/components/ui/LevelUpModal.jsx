@@ -1,11 +1,14 @@
 import { useEffect, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Zap, Star, X } from "lucide-react";
+import { dismissLevelUp, selectShowLevelUp, selectNewLevel } from "@/app/store/slices/gamificationSlice";
 import { triggerConfetti } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
-import useCourse from "@/features/course/hooks/useCourse";
 
 export default function LevelUpModal() {
-  const { showLevelUp: show, newLevel, dismissLevelUp } = useCourse();
+  const dispatch   = useDispatch();
+  const show       = useSelector(selectShowLevelUp);
+  const newLevel   = useSelector(selectNewLevel);
   const triggered  = useRef(false);
 
   useEffect(() => {
@@ -14,13 +17,13 @@ export default function LevelUpModal() {
       triggerConfetti();
       // Auto-dismiss after 5s
       const t = setTimeout(() => {
-        dismissLevelUp();
+        dispatch(dismissLevelUp());
         triggered.current = false;
       }, 5000);
       return () => clearTimeout(t);
     }
     if (!show) triggered.current = false;
-  }, [dismissLevelUp, show]);
+  }, [show, dispatch]);
 
   if (!show) return null;
 
@@ -71,13 +74,13 @@ export default function LevelUpModal() {
           </div>
 
           <div className="flex gap-3">
-            <Button variant="gradient" className="flex-1 gap-2" onClick={dismissLevelUp}>
+            <Button variant="gradient" className="flex-1 gap-2" onClick={() => dispatch(dismissLevelUp())}>
               <Zap className="w-4 h-4" /> Keep learning!
             </Button>
           </div>
 
           <button
-            onClick={dismissLevelUp}
+            onClick={() => dispatch(dismissLevelUp())}
             className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />

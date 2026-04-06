@@ -3,18 +3,7 @@ import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils";
 
 const ToastCtx = createContext(null);
-export const useToast = () => {
-  const context = useContext(ToastCtx);
-  if (context) return context;
-
-  return {
-    toast: () => {
-      if (import.meta.env?.DEV) {
-        console.warn("useToast called without ToastProvider; toast was ignored.");
-      }
-    },
-  };
-};
+export const useToast = () => useContext(ToastCtx);
 
 let toastId = 0;
 

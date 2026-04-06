@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { BookOpen, Map, CheckCircle2, Clock, Zap, ChevronRight, Lock } from "lucide-react";
 import Shell from "@/components/layout/Shell";
 import { PageHeader } from "@/components/layout/Shell";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, Progress, Skeleton, Badge, EmptyState } from "@/components/ui/index";
+import { fetchMyCourses, selectMyCourses, selectMyCoursesLoading } from "@/app/store/slices/courseSlice";
+import { fetchMyRoadmaps, selectMyRoadmaps, selectMyRoadmapsLoading } from "@/app/store/slices/roadmapSlice";
+import { selectIsPro } from "@/app/store/slices/authSlice";
 import { cn, getDifficultyConfig, formatXp } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 
 function CourseCard({ course }) {
   const pct  = Math.round((course.enrollment?.courseProgress?.overallProgress ?? 0) * 100);
@@ -94,23 +96,19 @@ function RoadmapCard({ enrollment }) {
 }
 
 export default function MyLearningPage() {
-  const { user } = useAuth();
-  const isPro = user?.plan === "pro";
-  const {
-    myCourses: courses,
-    myCoursesLoading: loading,
-    myRoadmaps: roadmapEnrollments,
-    myRoadmapsLoading: roadmapsLoading,
-    fetchMyCourses,
-    fetchMyRoadmaps,
-  } = useCourse();
+  const dispatch       = useDispatch();
+  const isPro          = useSelector(selectIsPro);
+  const courses        = useSelector(selectMyCourses);
+  const loading        = useSelector(selectMyCoursesLoading);
+  const roadmapEnrollments = useSelector(selectMyRoadmaps);
+  const roadmapsLoading    = useSelector(selectMyRoadmapsLoading);
   const [activeTab, setActiveTab] = useState("courses");
 
-  useEffect(() => { fetchMyCourses(); }, [fetchMyCourses]);
+  useEffect(() => { dispatch(fetchMyCourses()); }, [dispatch]);
 
   useEffect(() => {
-    if (isPro) fetchMyRoadmaps();
-  }, [fetchMyRoadmaps, isPro]);
+    if (isPro) dispatch(fetchMyRoadmaps());
+  }, [dispatch, isPro]);
 
   const active    = courses.filter((c) => c.enrollment?.status !== "completed");
   const completed = courses.filter((c) => c.enrollment?.status === "completed");
@@ -121,7 +119,7 @@ export default function MyLearningPage() {
   ];
 
   return (
-    <Shell showNavbar={false}>
+    <Shell>
       <PageHeader title="My Learning" description="Track your progress and pick up where you left off" />
 
       {/* Summary bar */}

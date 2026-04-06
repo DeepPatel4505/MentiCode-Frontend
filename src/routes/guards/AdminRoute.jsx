@@ -1,10 +1,10 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useSelector } from "react-redux";
+import { selectIsAuth, selectIsAdmin } from "@/app/store/slices/authSlice";
 
 export default function AdminRoute({ children }) {
-  const { user } = useAuth();
-  const isAuth = !!user;
-  const isAdmin = user?.role === "admin";
+  const isAuth  = useSelector(selectIsAuth);
+  const isAdmin = useSelector(selectIsAdmin);
   if (!isAuth)  return <Navigate to="/login" replace />;
   if (!isAdmin) return <Navigate to="/" replace />;
   return children;

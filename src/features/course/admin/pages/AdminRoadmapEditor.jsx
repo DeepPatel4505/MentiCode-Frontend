@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 import { ChevronLeft, Plus, Trash2, Eye, Save, Map, BookOpen, Search, GripVertical } from "lucide-react";
+import {
+  createRoadmap, updateRoadmap, addCourseToRoadmap, removeCourseFromRoadmap,
+  selectAdminSaving, clearError,
+} from "@/app/store/slices/adminSlice";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select, Card, CardContent, Field, Badge, Skeleton } from "@/components/ui/index";
 import { useToast } from "@/components/ui/Toast";
-import api from "@/lib/api";
+import api from "@/lib/axios";
 import { cn } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
 
 // ── Modal wrapper ─────────────────────────────────────────────
 function Modal({ title, onClose, children }) {
@@ -26,7 +30,7 @@ function Modal({ title, onClose, children }) {
 
 // ── Course picker modal ───────────────────────────────────────
 function CoursePickerModal({ roadmapId, existingCourseIds, onClose, onAdded }) {
-  const { addCourseToRoadmap } = useCourse();
+  const dispatch = useDispatch();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [courses, setCourses] = useState([]);
@@ -43,7 +47,7 @@ function CoursePickerModal({ roadmapId, existingCourseIds, onClose, onAdded }) {
 
   const handleAdd = async () => {
     if (!selected) return;
-    const res = await addCourseToRoadmap({ roadmapId, data: { courseId: selected.id } });
+    const res = await dispatch(addCourseToRoadmap({ roadmapId, data: { courseId: selected.id } }));
     if (res.meta.requestStatus === "fulfilled") {
       toast({ title: "Course added", type: "success" });
       onAdded({ ...res.payload, course: selected });
@@ -94,14 +98,10 @@ function CoursePickerModal({ roadmapId, existingCourseIds, onClose, onAdded }) {
 // ── Main editor ───────────────────────────────────────────────
 export default function AdminRoadmapEditor() {
   const { id }    = useParams();
+  const dispatch  = useDispatch();
   const navigate  = useNavigate();
   const { toast } = useToast();
-  const {
-    createRoadmap,
-    updateRoadmap,
-    removeCourseFromRoadmap,
-    adminSaving: saving,
-  } = useCourse();
+  const saving    = useSelector(selectAdminSaving);
   const isEdit    = !!id;
 
   const [roadmap,  setRoadmap]  = useState(null);
@@ -139,11 +139,11 @@ export default function AdminRoadmapEditor() {
     const payload = { ...data, tags };
 
     if (isEdit) {
-      const res = await updateRoadmap({ id, data: payload });
+      const res = await dispatch(updateRoadmap({ id, data: payload }));
       if (res.meta.requestStatus === "fulfilled") toast({ title: "Roadmap updated!", type: "success" });
       else toast({ title: "Error", description: res.payload, type: "error" });
     } else {
-      const res = await createRoadmap(payload);
+      const res = await dispatch(createRoadmap(payload));
       if (res.meta.requestStatus === "fulfilled") {
         toast({ title: "Roadmap created!", type: "success" });
         navigate(`/admin/roadmaps/${res.payload.id}/edit`);
@@ -152,7 +152,7 @@ export default function AdminRoadmapEditor() {
   };
 
   const handleRemoveCourse = async (nodeId) => {
-    const res = await removeCourseFromRoadmap({ roadmapId: id, nodeId });
+    const res = await dispatch(removeCourseFromRoadmap({ roadmapId: id, nodeId }));
     if (res.meta.requestStatus === "fulfilled") {
       setCourses((prev) => prev.filter((n) => n.id !== nodeId));
       toast({ title: "Course removed", type: "info" });

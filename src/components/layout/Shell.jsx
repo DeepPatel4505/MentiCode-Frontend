@@ -1,15 +1,13 @@
-import Navbar from "./Navbar";
 import { cn } from "@/lib/utils";
 import { Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export default function Shell({ children, className, fullWidth = false, showNavbar = true }) {
+// Shell no longer renders its own Navbar — GlobalLayout provides the top navbar.
+// It just provides consistent padding/max-width for page content.
+export default function Shell({ children, className, fullWidth = false }) {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {showNavbar ? <Navbar /> : null}
-      <main className={cn("flex-1", !fullWidth && "max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8", className)}>
-        {children}
-      </main>
+    <div className={cn("w-full", !fullWidth && "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8", className)}>
+      {children}
     </div>
   );
 }

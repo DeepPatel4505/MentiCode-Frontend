@@ -1,13 +1,12 @@
-import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Check, Zap, Star, Lock, ChevronRight, Map, Trophy } from "lucide-react";
 import Shell from "@/components/layout/Shell";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, Badge } from "@/components/ui/index";
+import { upgradeUserPlan, selectIsPro, selectIsAuth, selectAuthLoading } from "@/app/store/slices/authSlice";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/features/auth/hooks/useAuth";
-import api from "@/lib/api";
 
 const FREE_FEATURES = [
   "Access to free courses",
@@ -37,12 +36,12 @@ const FAQ = [
 ];
 
 export default function PricingPage() {
+  const dispatch   = useDispatch();
   const navigate   = useNavigate();
   const { toast }  = useToast();
-  const { user, setUser } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const isAuth = !!user;
-  const isPro = user?.plan === "pro";
+  const isPro      = useSelector(selectIsPro);
+  const isAuth     = useSelector(selectIsAuth);
+  const loading    = useSelector(selectAuthLoading);
 
   const handleUpgrade = async () => {
     if (!isAuth) { navigate("/register"); return; }
@@ -50,21 +49,17 @@ export default function PricingPage() {
 
     // In production this would redirect to a payment gateway.
     // For now it calls the upgrade endpoint directly (demo flow).
-    setLoading(true);
-    try {
-      const res = await api.post("/auth/upgrade");
-      setUser((prev) => ({ ...prev, ...(res.data?.data?.user ?? {}) }));
+    const res = await dispatch(upgradeUserPlan());
+    if (res.meta.requestStatus === "fulfilled") {
       toast({ title: "Welcome to Pro! 🎉", description: "All content is now unlocked.", type: "success" });
       navigate("/courses");
-    } catch (error) {
-      toast({ title: "Upgrade failed", description: error?.message ?? "Please try again", type: "error" });
-    } finally {
-      setLoading(false);
+    } else {
+      toast({ title: "Upgrade failed", description: res.payload, type: "error" });
     }
   };
 
   return (
-    <Shell showNavbar={false}>
+    <Shell>
       {/* Header */}
       <div className="text-center mb-14 max-w-2xl mx-auto">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-5">

@@ -1,29 +1,29 @@
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { Plus, Search, Map, Eye, Pencil, Trash2, CheckCircle2 } from "lucide-react";
+import {
+  fetchAdminRoadmaps, deleteRoadmap, updateRoadmap,
+  selectAdminRoadmaps, selectAdminRoadmapsLoading,
+} from "@/app/store/slices/adminSlice";
 import { Button } from "@/components/ui/Button";
 import { Input, Card, Badge, Skeleton } from "@/components/ui/index";
 import { useToast } from "@/components/ui/Toast";
 import { cn, timeAgo } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
 
 export default function AdminRoadmaps() {
+  const dispatch  = useDispatch();
   const { toast } = useToast();
-  const {
-    adminRoadmaps: roadmaps,
-    adminRoadmapsLoading: loading,
-    fetchAdminRoadmaps,
-    deleteRoadmap,
-    updateRoadmap,
-  } = useCourse();
+  const roadmaps  = useSelector(selectAdminRoadmaps);
+  const loading   = useSelector(selectAdminRoadmapsLoading);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
 
-  useEffect(() => { fetchAdminRoadmaps(); }, [fetchAdminRoadmaps]);
+  useEffect(() => { dispatch(fetchAdminRoadmaps()); }, [dispatch]);
 
   const handlePublish = async (r) => {
     const next = r.status === "published" ? "draft" : "published";
-    const res = await updateRoadmap({ id: r.id, data: { status: next } });
+    const res = await dispatch(updateRoadmap({ id: r.id, data: { status: next } }));
     if (res.meta.requestStatus === "fulfilled")
       toast({ title: next === "published" ? "Published!" : "Unpublished", type: "success" });
     else toast({ title: "Error", description: res.payload, type: "error" });
@@ -31,7 +31,7 @@ export default function AdminRoadmaps() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this roadmap? This cannot be undone.")) return;
-    const res = await deleteRoadmap(id);
+    const res = await dispatch(deleteRoadmap(id));
     if (res.meta.requestStatus === "fulfilled") toast({ title: "Deleted", type: "info" });
     else toast({ title: "Error", description: res.payload, type: "error" });
   };

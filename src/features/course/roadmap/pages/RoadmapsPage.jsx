@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { Map, Lock, Zap, BookOpen, ChevronRight, Search, Users, Star } from "lucide-react";
 import Shell from "@/components/layout/Shell";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, Badge, Skeleton } from "@/components/ui/index";
+import { fetchRoadmaps, selectRoadmaps, selectRoadmapLoading } from "@/app/store/slices/roadmapSlice";
+import { selectIsAuth, selectIsPro } from "@/app/store/slices/authSlice";
 import { cn } from "@/lib/utils";
-import useCourse from "@/features/course/hooks/useCourse";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 
 // ── Roadmap card ──────────────────────────────────────────────
 function RoadmapCard({ roadmap }) {
@@ -106,15 +107,16 @@ function RoadmapCardSkeleton() {
 }
 
 export function RoadmapsPage() {
-  const { user } = useAuth();
-  const isAuth = !!user;
-  const isPro = user?.plan === "pro";
-  const { roadmapList: roadmaps, roadmapLoading: loading, fetchRoadmaps } = useCourse();
+  const dispatch = useDispatch();
+  const roadmaps = useSelector(selectRoadmaps);
+  const loading  = useSelector(selectRoadmapLoading);
+  const isAuth   = useSelector(selectIsAuth);
+  const isPro    = useSelector(selectIsPro);
 
   const [search, setSearch] = useState("");
   const [activeTag, setActiveTag] = useState(null);
 
-  useEffect(() => { fetchRoadmaps({ status: "published", limit: 50 }); }, [fetchRoadmaps]);
+  useEffect(() => { dispatch(fetchRoadmaps({ status: "published", limit: 50 })); }, [dispatch]);
 
   // Collect all unique tags
   const allTags = useMemo(() => {
@@ -140,7 +142,7 @@ export function RoadmapsPage() {
   }, [roadmaps, search, activeTag]);
 
   return (
-    <Shell showNavbar={false}>
+    <Shell>
       {/* ── Hero ── */}
       <div className="relative mb-10 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-950/60 via-background to-background border border-primary/20 p-8">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-600/10 via-transparent to-transparent pointer-events-none" />

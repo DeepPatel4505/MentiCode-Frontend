@@ -1,26 +1,23 @@
 function CreatePlaygroundCancelDialog({ onConfirm, onDismiss }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-            <div className="w-full max-w-sm rounded-3xl border-2 border-white bg-[#141414] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
-                <h2 className="m-0 text-lg font-heading font-bold text-white">
-                    Leave Playground Setup?
-                </h2>
-                <p className="mt-3 text-sm leading-relaxed text-[#a8b8d0]">
+            <div className="w-full max-w-sm rounded-lg border border-neutral-800 bg-neutral-900 p-6 shadow-2xl">
+                <h2 className="text-base font-semibold text-white mb-2">Leave Playground Setup?</h2>
+                <p className="text-sm text-neutral-400 leading-relaxed">
                     Your current setup choices will be discarded.
                 </p>
-
-                <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="mt-5 flex gap-2 justify-end">
                     <button
                         type="button"
                         onClick={onDismiss}
-                        className="h-11 rounded-full border-2 border-white bg-transparent px-4 text-sm font-semibold text-white transition-all duration-200 hover:border-accent-amber hover:text-accent-amber"
+                        className="h-8 px-4 rounded-md border border-neutral-700 text-sm font-medium text-neutral-400 hover:text-neutral-200 hover:border-neutral-600 transition-colors"
                     >
                         Stay
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
-                        className="h-11 rounded-full border-2 border-[#ffb95e] bg-[#ffb95e] px-4 text-sm font-semibold text-black transition-all duration-200 hover:bg-[#141414] hover:text-white"
+                        className="h-8 px-4 rounded-md border border-violet-500/50 bg-violet-500/10 text-sm font-medium text-violet-300 hover:bg-violet-500/20 hover:border-violet-500/70 transition-colors"
                     >
                         Leave
                     </button>

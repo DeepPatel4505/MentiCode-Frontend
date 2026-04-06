@@ -1,12 +1,14 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import {
   LayoutDashboard, BookOpen, Users, BarChart3,
   Zap, LogOut, Menu, X, ChevronRight, Map,
 } from "lucide-react";
 import { useState } from "react";
+import { logoutUser } from "@/app/store/slices/authSlice";
+import { selectUser } from "@/app/store/slices/authSlice";
 import { Avatar } from "@/components/ui/index";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/features/auth/hooks/useAuth";
 
 const NAV = [
   { to: "/admin",           label: "Dashboard",  icon: LayoutDashboard, exact: true },
@@ -32,12 +34,13 @@ function SidebarLink({ item }) {
 }
 
 export default function AdminLayout() {
+  const dispatch  = useDispatch();
   const navigate  = useNavigate();
-  const { user, handleLogout: logout } = useAuth();
+  const user      = useSelector(selectUser);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
+    await dispatch(logoutUser());
     navigate("/login");
   };
 

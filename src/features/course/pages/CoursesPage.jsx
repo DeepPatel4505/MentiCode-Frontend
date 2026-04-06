@@ -7,9 +7,10 @@ import {
 import Shell from "@/components/layout/Shell";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/index";
+import { selectIsAuth, selectIsPro } from "@/app/store/slices/authSlice";
+import { useSelector } from "react-redux";
 import { cn, getDifficultyConfig } from "@/lib/utils";
-import api from "@/lib/api";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import api from "@/lib/axios";
 
 
 
@@ -64,7 +65,7 @@ function CourseCard({ course, isPro }) {
 }
 
 // ── Tag section — only fetches when scrolled into view ────────
-function CourseRow({ tag, isPro, onTagClick, seenIds, onSeen, onEmpty }) {
+function CourseRow({ tag, isPro, onTagClick }) {
   const [courses,  setCourses]  = useState([]);
   const [loading,  setLoading]  = useState(false);
   const [fetched,  setFetched]  = useState(false);
@@ -78,7 +79,6 @@ function CourseRow({ tag, isPro, onTagClick, seenIds, onSeen, onEmpty }) {
     setLoading(true);
     setProgress(0);
 
-    // Animated progress bar while waiting
     timerRef.current = setInterval(() => {
       setProgress((p) => {
         if (p >= 85) { clearInterval(timerRef.current); return p; }
@@ -90,11 +90,9 @@ function CourseRow({ tag, isPro, onTagClick, seenIds, onSeen, onEmpty }) {
       .then((r) => {
         clearInterval(timerRef.current);
         setProgress(100);
-        // Filter out courses already shown in a previous row
-        const fresh = (r.data.data.courses ?? []).filter((c) => !seenIds.has(c.id));
-        setCourses(fresh);
-        onSeen(fresh.map((c) => c.id));
-        if (fresh.length === 0) onEmpty(tag);
+        // Show all courses that belong to this tag — no deduplication
+        const all = r.data.data.courses ?? [];
+        setCourses(all);
       })
       .catch(() => { clearInterval(timerRef.current); setProgress(100); })
       .finally(() => {
@@ -262,9 +260,8 @@ function InfiniteGrid({ query, tag, isPro }) {
 
 // ── Main page ─────────────────────────────────────────────────
 export default function CoursesPage() {
-  const { user } = useAuth();
-  const isPro = user?.plan === "pro";
-  const isAuth = !!user;
+  const isPro   = useSelector(selectIsPro);
+  const isAuth  = useSelector(selectIsAuth);
 
   const [search,    setSearch]    = useState("");
   const [activeTag, setActiveTag] = useState("");
@@ -323,17 +320,8 @@ export default function CoursesPage() {
   const isFiltering = !!debounced || !!activeTag;
   const clearFilters = () => { setSearch(""); setActiveTag(""); setDebounced(""); };
 
-  // Track which course IDs have already been rendered in a row (home page only)
-  const seenIdsRef = useRef(new Set());
-  const handleSeen = useCallback((ids) => {
-    ids.forEach((id) => seenIdsRef.current.add(id));
-  }, []);
-  const handleEmpty = useCallback((tag) => {
-    setPillTags((prev) => prev.filter((t) => t !== tag));
-  }, []);
-
   return (
-    <Shell fullWidth className="!p-0" showNavbar={false}>
+    <Shell fullWidth className="!p-0">
       {/* Hero */}
       <div className="bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#0f172a] border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
@@ -422,7 +410,7 @@ export default function CoursesPage() {
         {isFiltering
           ? <InfiniteGrid query={debounced} tag={activeTag} isPro={isPro} />
           : tagsReady && rowTags.map((tag) => (
-              <CourseRow key={tag} tag={tag} isPro={isPro} onTagClick={setActiveTag} seenIds={seenIdsRef.current} onSeen={handleSeen} onEmpty={handleEmpty} />
+              <CourseRow key={tag} tag={tag} isPro={isPro} onTagClick={setActiveTag} />
             ))
         }
 

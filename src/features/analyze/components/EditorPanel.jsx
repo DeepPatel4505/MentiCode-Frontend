@@ -19,14 +19,16 @@ export const EditorPanel = ({
             beforeMount={beforeMount}
             onMount={onMount}
             options={{
-                fontSize: 14,
-                fontFamily: "Fira Code, monospace",
+                fontSize: 13,
+                fontFamily: '"JetBrains Mono", "Fira Code", monospace',
                 minimap: { enabled: false },
                 smoothScrolling: true,
                 scrollBeyondLastLine: false,
                 wordWrap: "on",
                 padding: { top: 16 },
                 showUnused: false,
+                renderLineHighlight: "line",
+                lineNumbersMinChars: 3,
             }}
         />
     );
