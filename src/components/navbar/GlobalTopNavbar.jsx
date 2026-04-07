@@ -45,8 +45,8 @@ function GlobalTopNavbar() {
         </NavLink>
 
         <nav className="flex items-center gap-0.5" aria-label="Primary navigation">
-          <NavLink to="/" end className={navLinkClass}>Courses</NavLink>
-          <NavLink to="/analyze" className={navLinkClass}>Analyze</NavLink>
+          <NavLink to="/" className={navLinkClass}>Analyze</NavLink>
+          <NavLink to="/courses" end className="hidden">Courses</NavLink>
         </nav>
       </div>
 

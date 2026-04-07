@@ -79,7 +79,7 @@ const withProfileLayout = (page) => (
 export const router = createBrowserRouter([
 
   // ── Public Course Pages (with course sidebar) ──────────────
-  { path: "/",               element: withCourseLayout(<CoursesPage />) },
+  { path: "/courses",               element: withCourseLayout(<CoursesPage />) },
   { path: "/courses/:slug",  element: <CourseDetailPage /> },
   { path: "/roadmaps",       element: withCourseLayout(<RoadmapsPage />) },
   { path: "/roadmaps/:slug", element: withCourseLayout(<RoadmapDetailPage />) },
@@ -144,7 +144,7 @@ export const router = createBrowserRouter([
   },
 
   // ── Analyze Routes (with analyze sidebar) ──────────────────
-  { path: "/analyze",                    element: withAnalyzeLayout(<AnalyzeHome />) },
+  { path: "/",                    element: withAnalyzeLayout(<AnalyzeHome />) },
   { path: "/analyze/playground",         element: withAnalyzeLayout(<PlaygroundPage />) },
   { path: "/analyze/my-analysis",        element: withAnalyzeLayout(<JobResultPage />) },
   { path: "/analyze/my-analysis/:jobId", element: withAnalyzeLayout(<JobResultPage />) },
