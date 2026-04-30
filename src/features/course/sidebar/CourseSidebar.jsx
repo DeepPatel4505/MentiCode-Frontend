@@ -3,7 +3,7 @@ import { Library, Map, BookOpen, Trophy, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const courseNavigation = [
-  { path: "/",            label: "Library",     end: true, icon: Library },
+  { path: "/courses",            label: "Library",     end: true, icon: Library },
   { path: "/roadmaps",    label: "Roadmaps",              icon: Map },
   { path: "/my-learning", label: "My Learning",           icon: BookOpen },
   { path: "/leaderboard", label: "Leaderboard",           icon: Trophy },

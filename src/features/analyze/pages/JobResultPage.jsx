@@ -166,7 +166,7 @@ function JobResultPage() {
   const insights = useMemo(() => buildInsights(rows), [rows]);
 
   return (
-    <section className="w-full max-w-5xl pb-12">
+    <section className="w-full max-w-5xl p-6 mx-auto pb-12">
       {/* Header */}
       <div className="mb-8">
         <p className="text-[10px] uppercase tracking-[0.1em] text-neutral-600 font-semibold">My Analysis</p>

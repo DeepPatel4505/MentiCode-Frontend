@@ -84,7 +84,7 @@ function PlaygroundPage() {
     }, [accessToken]);
 
     return (
-        <section className="w-full max-w-6xl mx-auto pb-12">
+        <section className="w-full max-w-full p-6 mx-auto pb-12">
             {/* Page Header */}
             <div className="flex items-start justify-between mb-8">
                 <div>
@@ -111,7 +111,7 @@ function PlaygroundPage() {
             </div>
 
             {/* Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="max-w-5xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {/* New Playground Card */}
                 <button
                     type="button"

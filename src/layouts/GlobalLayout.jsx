@@ -4,9 +4,9 @@ import { ChevronLeft, ChevronRight, Library, Map, BookOpen, Trophy, Sparkles } f
 import GlobalTopNavbar from '../components/navbar/GlobalTopNavbar.jsx'
 import { cn } from '../lib/utils.js'
 
-const SIDEBAR_MIN_WIDTH = 220
-const SIDEBAR_MAX_WIDTH = 420
-const SIDEBAR_DEFAULT_WIDTH = 260
+const SIDEBAR_MIN_WIDTH = 180
+const SIDEBAR_MAX_WIDTH = 300
+const SIDEBAR_DEFAULT_WIDTH = 180
 
 function DefaultWorkspaceSidebar() {
   const links = [
@@ -150,7 +150,7 @@ function GlobalLayout({ children, featureSidebar }) {
         ) : null}
 
         {/* Main Content */}
-        <main className="bg-[hsl(240_10%_4%)] p-6 overflow-y-auto overflow-x-visible">
+        <main className="bg-[hsl(240_10%_4%)] overflow-y-auto overflow-x-visible">
           {children}
         </main>
       </div>
