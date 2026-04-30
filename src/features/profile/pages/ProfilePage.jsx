@@ -74,9 +74,11 @@ export default function ProfilePage() {
     Boolean(user?.githubAccessToken) ||
     (user?.loginProvider || "").toLowerCase() === "github";
 
-  // Handle OAuth redirect: /profile?token=<jwt>
+  // Handle OAuth redirect: /profile?token=<jwt> or GitHub connection return
   useEffect(() => {
     const token = searchParams.get("token") || searchParams.get("accessToken");
+    
+    // Only process if token exists
     if (!token) return;
 
     // Remove token from URL immediately
@@ -87,6 +89,7 @@ export default function ProfilePage() {
       .then((res) => {
         const userData = res.data?.data?.user ?? res.data?.data ?? res.data;
         dispatch(setCredentials({ user: userData, accessToken: token }));
+        // Don't redirect if already on profile page
         if (userData?.role === "admin") navigate("/admin", { replace: true });
       })
       .catch(() => {
@@ -94,6 +97,27 @@ export default function ProfilePage() {
         navigate("/login", { replace: true });
       });
   }, []);
+
+  // Detect GitHub connection success and refresh user state
+  useEffect(() => {
+    const isGithubConnected = searchParams.get("github") === "connected";
+    if (!isGithubConnected) return;
+
+    // Remove github parameter from URL
+    setSearchParams({}, { replace: true });
+
+    // Fetch fresh user data to show updated GitHub connection
+    api.get("/auth/me")
+      .then((res) => {
+        const userData = res.data?.data?.user ?? res.data?.data ?? res.data;
+        if (userData) {
+          dispatch(setCredentials({ user: userData, accessToken: localStorage.getItem("accessToken") }));
+        }
+      })
+      .catch(() => {
+        // Silent fail - stay on page
+      });
+  }, [dispatch, searchParams]);
 
   useEffect(() => {
     if (!user) return;
