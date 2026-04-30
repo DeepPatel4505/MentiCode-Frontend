@@ -34,6 +34,23 @@ const languageByExtension = {
 
 const allowedExtensions = new Set(Object.keys(languageByExtension));
 
+function isBinaryContent(decoded) {
+    // Heuristic: presence of null byte OR too many non-printable chars
+    let nonPrintable = 0;
+
+    for (let i = 0; i < decoded.length; i++) {
+        const code = decoded.charCodeAt(i);
+
+        if (code === 0) return true; // null byte = binary
+
+        if (code < 32 && code !== 9 && code !== 10 && code !== 13) {
+            nonPrintable++;
+        }
+    }
+
+    return nonPrintable / decoded.length > 0.3;
+}
+
 function getFileExtension(path = "") {
     const normalized = String(path).toLowerCase();
     if (!normalized.includes(".")) {
@@ -66,7 +83,9 @@ async function githubGetJson(pathname) {
 
     if (!response.ok) {
         const payload = await response.text();
-        throw new Error(payload || `GitHub request failed (${response.status})`);
+        throw new Error(
+            payload || `GitHub request failed (${response.status})`,
+        );
     }
 
     return response.json();
@@ -84,7 +103,9 @@ export const createPlayground = async (payload) => {
         const res = await api.post(`/analysis/playgrounds`, payload);
         return res.data;
     } catch (error) {
-        throw new Error(error?.error || error?.message || "Failed to create playground");
+        throw new Error(
+            error?.error || error?.message || "Failed to create playground",
+        );
     }
 };
 
@@ -93,7 +114,9 @@ export const getPlaygrounds = async () => {
         const res = await api.get(`/analysis/playgrounds`);
         return res.data;
     } catch (error) {
-        throw new Error(error?.error || error?.message || "Failed to fetch playgrounds");
+        throw new Error(
+            error?.error || error?.message || "Failed to fetch playgrounds",
+        );
     }
 };
 
@@ -102,17 +125,23 @@ export const deletePlayground = async (playgroundId) => {
         const res = await api.delete(`/analysis/playgrounds/${playgroundId}`);
         return res.data;
     } catch (error) {
-        throw new Error(error?.error || error?.message || "Failed to delete playground");
+        throw new Error(
+            error?.error || error?.message || "Failed to delete playground",
+        );
     }
 };
 
 export const getFiles = async (playgroundId) => {
     try {
-        const res = await api.get(`/analysis/playgrounds/${playgroundId}/files`);
+        const res = await api.get(
+            `/analysis/playgrounds/${playgroundId}/files`,
+        );
         console.log("Fetched files:", res.data);
         return res.data;
     } catch (error) {
-        throw new Error(error?.error || error?.message || "Failed to fetch files");
+        throw new Error(
+            error?.error || error?.message || "Failed to fetch files",
+        );
     }
 };
 
@@ -123,7 +152,9 @@ export const startAnalysis = async (playgroundId, fileId) => {
         );
         return res.data;
     } catch (error) {
-        throw new Error(error?.error || error?.message || "Failed to start analysis");
+        throw new Error(
+            error?.error || error?.message || "Failed to start analysis",
+        );
     }
 };
 
@@ -132,7 +163,9 @@ export const getJobResult = async (jobId) => {
         const res = await api.get(`/analysis/jobs/${jobId}/result`);
         return res.data;
     } catch (error) {
-        throw new Error(error?.error || error?.message || "Failed to fetch result");
+        throw new Error(
+            error?.error || error?.message || "Failed to fetch result",
+        );
     }
 };
 
@@ -141,7 +174,9 @@ export const getJobStatus = async (jobId) => {
         const res = await api.get(`/analysis/jobs/${jobId}`);
         return res.data;
     } catch (error) {
-        throw new Error(error?.error || error?.message || "Failed to fetch job status");
+        throw new Error(
+            error?.error || error?.message || "Failed to fetch job status",
+        );
     }
 };
 
@@ -190,7 +225,11 @@ export const getGithubPublicRepos = async (usernameOrGithubId) => {
         : [];
 };
 
-export const sendGithubRepoToPlayground = async ({ owner, repoName, defaultBranch }) => {
+export const sendGithubRepoToPlayground = async ({
+    owner,
+    repoName,
+    defaultBranch,
+}) => {
     if (!owner || !repoName) {
         throw new Error("Owner and repository name are required.");
     }
@@ -202,11 +241,11 @@ export const sendGithubRepoToPlayground = async ({ owner, repoName, defaultBranc
     const entries = Array.isArray(treeResult?.tree) ? treeResult.tree : [];
     const sortedCandidates = entries
         .filter((entry) => entry?.type === "blob")
-        .filter((entry) => {
-            const ext = getFileExtension(entry.path);
-            return allowedExtensions.has(ext);
-        })
-        .filter((entry) => Number(entry.size || 0) > 0 && Number(entry.size || 0) <= MAX_FILE_BYTES)
+        .filter(
+            (entry) =>
+                Number(entry.size || 0) > 0 &&
+                Number(entry.size || 0) <= MAX_FILE_BYTES,
+        )
         .sort((a, b) => Number(a.size || 0) - Number(b.size || 0));
 
     const candidates = [];
@@ -227,7 +266,9 @@ export const sendGithubRepoToPlayground = async ({ owner, repoName, defaultBranc
     }
 
     if (candidates.length === 0) {
-        throw new Error("No supported text/code files found in this repository.");
+        throw new Error(
+            "No supported text/code files found in this repository.",
+        );
     }
 
     const files = await Promise.all(
@@ -237,7 +278,9 @@ export const sendGithubRepoToPlayground = async ({ owner, repoName, defaultBranc
             );
 
             const decoded = decodeBase64Utf8(blob.content || "");
-
+            if (isBinaryContent(decoded)) {
+                return null;
+            }
             return {
                 name: entry.path,
                 language: getLanguageFromFileName(entry.path),

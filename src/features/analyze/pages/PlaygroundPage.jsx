@@ -7,10 +7,13 @@ import { useAuth } from "../../auth/hooks/useAuth.js";
 import { languageToSymbolMap } from "../utils/languageTosymbolmap.js";
 import DeletePlaygroundDialog from "../components/createPlayground/DeletePlaygroundDialog.jsx";
 import CardOptionsMenu from "../components/createPlayground/CardOptionsMenu.jsx";
+import { useSelector } from "react-redux";
+import { selectIsPro } from "../../../app/store/slices/authSlice.js";
 
-const PLAYGROUND_LIMIT = 5;
 
 function PlaygroundPage() {
+    const { isPro }  = useSelector(selectIsPro);
+    const PLAYGROUND_LIMIT = isPro ? 20 : 5;
     const navigate = useNavigate();
     const { accessToken } = useAuth();
     const [playgrounds, setPlaygrounds] = useState([]);

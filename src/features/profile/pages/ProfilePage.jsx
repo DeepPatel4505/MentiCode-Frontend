@@ -289,7 +289,7 @@ export default function ProfilePage() {
 
                     {!isGithubConnected && (
                       <Button size="sm" asChild>
-                        <a href="/api/v1/auth/github">Connect GitHub</a>
+                        <a href="/api/v1/auth/github/connect">Connect GitHub</a>
                       </Button>
                     )}
                   </div>
