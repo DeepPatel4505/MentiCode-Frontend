@@ -241,7 +241,7 @@ export const sendGithubRepoToPlayground = async ({ owner, repoName, defaultBranc
             return {
                 name: entry.path,
                 language: getLanguageFromFileName(entry.path),
-                storagePath: `inline://${encodeURIComponent(decoded)}`,
+                content: decoded,
             };
         }),
     );

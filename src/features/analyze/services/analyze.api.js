@@ -74,18 +74,83 @@ function sanitizeRepoName(name = "") {
     return trimmed.slice(0, 80);
 }
 
+let cachedGithubToken = null;
+
+async function getGithubToken() {
+    if (cachedGithubToken) {
+        console.log("✅ Using cached GitHub token");
+        return cachedGithubToken;
+    }
+    
+    try {
+        const userRes = await api.get("/auth/me");
+        cachedGithubToken = userRes?.data?.user?.githubAccessToken || null;
+        
+        if (cachedGithubToken) {
+            console.log("✅ Fetched GitHub token from /auth/me (authenticated request)");
+            return cachedGithubToken;
+        }
+
+        // Token is missing - try to refresh it
+        console.warn("⚠️ GitHub token is missing. Attempting to refresh...");
+        try {
+            const refreshRes = await api.get("/auth/github/token/refresh");
+            if (refreshRes?.data?.data?.token) {
+                cachedGithubToken = refreshRes.data.data.token;
+                console.log("✅ Refreshed GitHub token");
+                return cachedGithubToken;
+            }
+        } catch (refreshError) {
+            console.error("❌ Failed to refresh token. You must RE-LOGIN with GitHub:");
+            console.error("   1. Click your profile avatar");
+            console.error("   2. Click 'Logout'");
+            console.error("   3. Click 'Sign in with GitHub'");
+            console.error("   4. Complete GitHub authentication");
+            console.error("   5. Try again");
+            throw new Error("GitHub token missing. Please re-login with GitHub to save your access token.");
+        }
+    } catch (error) {
+        console.error("Error getting GitHub token:", error.message);
+        throw error;
+    }
+}
+
 async function githubGetJson(pathname) {
+    let githubToken;
+    try {
+        githubToken = await getGithubToken();
+    } catch (error) {
+        console.error("Cannot fetch GitHub data:", error.message);
+        throw error;
+    }
+
+    const headers = {
+        Accept: "application/vnd.github+json",
+    };
+
+    // Add GitHub token if available (for authenticated requests)
+    if (githubToken) {
+        headers.Authorization = `Bearer ${githubToken}`;
+        console.log(`📡 GitHub API request WITH auth: ${pathname}`);
+    } else {
+        console.error(`❌ GitHub API request WITHOUT auth (rate limited): ${pathname}`);
+    }
+
     const response = await fetch(`${GITHUB_API_BASE}${pathname}`, {
-        headers: {
-            Accept: "application/vnd.github+json",
-        },
+        headers,
     });
 
     if (!response.ok) {
         const payload = await response.text();
-        throw new Error(
-            payload || `GitHub request failed (${response.status})`,
-        );
+        let errorMsg = payload;
+        try {
+            const parsed = JSON.parse(payload);
+            errorMsg = parsed.message || payload;
+        } catch (e) {
+            // payload is not JSON
+        }
+        console.error(`❌ GitHub API Error (${response.status}): ${errorMsg}`);
+        throw new Error(errorMsg || `GitHub request failed (${response.status})`);
     }
 
     return response.json();
@@ -136,7 +201,6 @@ export const getFiles = async (playgroundId) => {
         const res = await api.get(
             `/analysis/playgrounds/${playgroundId}/files`,
         );
-        console.log("Fetched files:", res.data);
         return res.data;
     } catch (error) {
         throw new Error(
@@ -284,7 +348,7 @@ export const sendGithubRepoToPlayground = async ({
             return {
                 name: entry.path,
                 language: getLanguageFromFileName(entry.path),
-                storagePath: `inline://${encodeURIComponent(decoded)}`,
+                content: decoded,
             };
         }),
     );
@@ -297,3 +361,16 @@ export const sendGithubRepoToPlayground = async ({
 
     return createPlayground(payload);
 };
+
+
+export async function fetchFileContent(fileId) {
+    const res = await api.get(`/analysis/files/${fileId}/content`, {
+        credentials: "include",
+    });
+
+    if (res.statusText != "OK") {
+        throw new Error("Failed to fetch file content");
+    }
+
+    return res.data;
+}

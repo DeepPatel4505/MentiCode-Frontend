@@ -252,7 +252,8 @@ export default function CreateNewPlayground() {
                     name: relativePath,
                     size: file.size,
                     language: getLanguageFromFileName(relativePath),
-                    storagePath: `inline://${encodeURIComponent(content)}`,
+                    content: content,
+                    storagePath: relativePath,
                 });
 
                 const processed = index + 1;

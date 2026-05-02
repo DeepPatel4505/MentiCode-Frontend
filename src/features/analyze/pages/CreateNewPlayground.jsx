@@ -5,6 +5,7 @@ import { createPlayground, getPlaygrounds } from "../services/analyze.api.js";
 import CreatePlaygroundOptionCard from "../components/createPlayground/CreatePlaygroundOptionCard.jsx";
 import CreatePlaygroundCapacityMeter from "../components/createPlayground/CreatePlaygroundCapacityMeter.jsx";
 import CreatePlaygroundUploadPreview from "../components/createPlayground/CreatePlaygroundUploadPreview.jsx";
+import CreatePlaygroundCancelDialog from "../components/createPlayground/CreatePlaygroundCancelDialog.jsx";
 
 const PLAYGROUND_LIMIT = 5;
 const DEFAULT_PLAYGROUND_NAME = "Untitled Playground";
@@ -73,7 +74,10 @@ function getFileExtension(name = "") {
 }
 
 function isSupportedUploadFile(file) {
-    const relativePath = (file.webkitRelativePath || file.name || "").replace(/\\/g, "/");
+    const relativePath = (file.webkitRelativePath || file.name || "").replace(
+        /\\/g,
+        "/",
+    );
     const extension = getFileExtension(relativePath);
 
     if (!extension) {
@@ -92,7 +96,10 @@ function getPlaygroundNameFromFirstFile(firstFile) {
         return DEFAULT_PLAYGROUND_NAME;
     }
 
-    const relativePath = (firstFile.webkitRelativePath || "").replace(/\\/g, "/");
+    const relativePath = (firstFile.webkitRelativePath || "").replace(
+        /\\/g,
+        "/",
+    );
     if (relativePath.includes("/")) {
         const [rootFolderName] = relativePath.split("/");
         return rootFolderName || DEFAULT_PLAYGROUND_NAME;
@@ -137,6 +144,7 @@ export default function CreateNewPlayground() {
     const [error, setError] = useState("");
     const [uploadWarning, setUploadWarning] = useState("");
     const [playgroundName, setPlaygroundName] = useState("");
+    const [showCancelDialog, setShowCancelDialog] = useState(false);
 
     const fromQuery = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -188,8 +196,26 @@ export default function CreateNewPlayground() {
         [activeCount],
     );
 
+    const hasUnsavedChanges = useMemo(() => {
+        return Boolean(playgroundName.trim()) || uploadedFiles.length > 0;
+    }, [playgroundName, uploadedFiles.length]);
+
     const handleCancel = () => {
+        if (hasUnsavedChanges || isReadingFiles || isSubmitting) {
+            setShowCancelDialog(true);
+            return;
+        }
+
         navigate(backPath);
+    };
+
+    const handleConfirmCancel = () => {
+        setShowCancelDialog(false);
+        navigate(backPath);
+    };
+
+    const handleDismissCancel = () => {
+        setShowCancelDialog(false);
     };
 
     const handleSelectFiles = async (event) => {
@@ -230,7 +256,9 @@ export default function CreateNewPlayground() {
                 setUploadedFiles([]);
                 setIsReadingFiles(false);
                 setReadingProgress({ processed: 0, total: 0 });
-                setError("No supported text/code files found in the selected upload.");
+                setError(
+                    "No supported text/code files found in the selected upload.",
+                );
                 event.target.value = "";
                 return;
             }
@@ -252,7 +280,8 @@ export default function CreateNewPlayground() {
                     name: relativePath,
                     size: file.size,
                     language: getLanguageFromFileName(relativePath),
-                    storagePath: `inline://${encodeURIComponent(content)}`,
+                    content: content,
+                    storagePath: relativePath,
                 });
 
                 const processed = index + 1;
@@ -311,7 +340,7 @@ export default function CreateNewPlayground() {
                 files: uploadedFiles.map((file) => ({
                     name: file.name,
                     language: file.language,
-                    storagePath: file.storagePath,
+                    content: file.content,
                 })),
             };
 
@@ -323,9 +352,60 @@ export default function CreateNewPlayground() {
             setIsSubmitting(false);
         }
     };
+    const handleDrop = async (e) => {
+        e.preventDefault();
+
+        const items = e.dataTransfer.items;
+        if (!items) return;
+
+        const files = [];
+
+        for (const item of items) {
+            const entry = item.webkitGetAsEntry?.();
+            if (entry) {
+                await traverseEntry(entry, files);
+            }
+        }
+
+        processDroppedFiles(files);
+    };
+
+    const traverseEntry = (entry, files) => {
+        return new Promise((resolve) => {
+            if (entry.isFile) {
+                entry.file((file) => {
+                    files.push(file);
+                    resolve();
+                });
+            } else if (entry.isDirectory) {
+                const reader = entry.createReader();
+
+                reader.readEntries(async (entries) => {
+                    for (const ent of entries) {
+                        await traverseEntry(ent, files);
+                    }
+                    resolve();
+                });
+            } else {
+                resolve();
+            }
+        });
+    };
+
+    const processDroppedFiles = async (files) => {
+        const eventLike = { target: { files } };
+        await handleSelectFiles(eventLike);
+    };
 
     return (
         <main className="min-h-screen bg-[hsl(240_10%_4%)] px-4 py-8 text-white sm:px-6 lg:px-10">
+            {showCancelDialog && (
+                <CreatePlaygroundCancelDialog
+                    onConfirm={handleConfirmCancel}
+                    onDismiss={handleDismissCancel}
+                />
+            )}
+
             <div className="mx-auto w-full max-w-4xl">
                 <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -365,7 +445,7 @@ export default function CreateNewPlayground() {
                             id="playground-name"
                             type="text"
                             value={playgroundName}
-                            onChange={e => {
+                            onChange={(e) => {
                                 setPlaygroundName(e.target.value);
                                 if (error) setError("");
                             }}
@@ -375,31 +455,22 @@ export default function CreateNewPlayground() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[28%_1fr]">
-                        <aside className="grid h-fit grid-cols-1 gap-2">
-                            <CreatePlaygroundOptionCard
-                                title="Upload Local Files"
-                                description="Select local files to seed your playground workspace."
-                                value="upload"
-                                selectedValue="upload"
-                                onSelect={() => {}}
-                            />
-                            <CreatePlaygroundOptionCard
-                                title="Import GitHub Repo"
-                                description="GitHub import is coming soon. Use local upload for now."
-                                value="github"
-                                selectedValue="upload"
-                                onSelect={() => {}}
-                            />
-                        </aside>
+                    <div className="grid gap-4">
 
-                        <div className="rounded-md border border-neutral-800 bg-neutral-950/60 p-4">
+                        <div className="rounded-md border border-neutral-800 bg-neutral-950/60 p-5">
                             <label
                                 htmlFor="playground-upload"
                                 className="inline-flex h-8 cursor-pointer items-center justify-center rounded-md border border-violet-500/50 bg-violet-500/10 px-4 text-xs font-semibold text-violet-300 transition-all hover:bg-violet-500/20 hover:border-violet-500/70"
                             >
-                                Choose Files / Folder
+                                Import Project Folder
                             </label>
+                            <div
+                                onDrop={handleDrop}
+                                onDragOver={(e) => e.preventDefault()}
+                                className="mt-3 border-2 border-dashed border-neutral-700 rounded-md p-10 text-center text-sm text-neutral-500 hover:border-violet-500/50 transition hover:cursor-pointer"
+                            >
+                                Drag & drop a folder or files here
+                            </div>
                             <input
                                 id="playground-upload"
                                 type="file"
@@ -411,12 +482,16 @@ export default function CreateNewPlayground() {
                             />
 
                             <p className="mt-3 mb-0 text-xs text-neutral-600">
-                                Supported: text-based source, code, and config files.
+                                Supported: text-based source, code, and config
+                                files.
                             </p>
 
                             {!!detectedFolderName && (
                                 <p className="mt-2 mb-0 text-xs text-neutral-300">
-                                    Folder: <span className="font-semibold">{detectedFolderName}</span>
+                                    Folder:{" "}
+                                    <span className="font-semibold">
+                                        {detectedFolderName}
+                                    </span>
                                 </p>
                             )}
                             {detectedFileCount > 0 && (
@@ -426,7 +501,8 @@ export default function CreateNewPlayground() {
                             )}
                             {skippedFileCount > 0 && (
                                 <p className="mt-1 mb-0 text-xs text-amber-400">
-                                    {skippedFileCount} files skipped (unsupported)
+                                    {skippedFileCount} files skipped
+                                    (unsupported)
                                 </p>
                             )}
                             {uploadWarning && (
@@ -438,12 +514,16 @@ export default function CreateNewPlayground() {
                             {isReadingFiles && (
                                 <div className="mt-3 rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2.5">
                                     <p className="m-0 text-xs text-neutral-400">
-                                        Reading files… {readingProgress.processed}/{readingProgress.total}
+                                        Reading files…{" "}
+                                        {readingProgress.processed}/
+                                        {readingProgress.total}
                                     </p>
                                     <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-neutral-800">
                                         <div
                                             className="h-full rounded-full bg-violet-500 transition-all duration-200"
-                                            style={{ width: `${readingProgress.total ? (readingProgress.processed / readingProgress.total) * 100 : 0}%` }}
+                                            style={{
+                                                width: `${readingProgress.total ? (readingProgress.processed / readingProgress.total) * 100 : 0}%`,
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -476,7 +556,13 @@ export default function CreateNewPlayground() {
                         <button
                             type="button"
                             onClick={handleCreate}
-                            disabled={!hasCapacity || isLoadingUsage || isSubmitting || isReadingFiles || !uploadedFiles.length}
+                            disabled={
+                                !hasCapacity ||
+                                isLoadingUsage ||
+                                isSubmitting ||
+                                isReadingFiles ||
+                                !uploadedFiles.length
+                            }
                             className="h-9 rounded-md border border-violet-500/50 bg-violet-500/10 px-5 text-sm font-semibold text-violet-300 transition-all hover:bg-violet-500/20 hover:border-violet-500/70 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             {isSubmitting ? "Creating…" : "Continue to Editor"}

@@ -13,7 +13,7 @@ import {
     usePlaygroundFilesQuery,
     useStartAnalysisMutation,
 } from "../queries/analysisQueries";
-
+import { fetchFileContent } from "../services/analyze.api.js";
 // Component imports
 import FileTree from "../components/FileTree.jsx";
 import { EditorPanel } from "../components/EditorPanel.jsx";
@@ -22,25 +22,6 @@ import AuditPanel from "../components/AuditPanel.jsx";
 const AUDIT_TABS = ["All", "Critical", "Major", "Minor"];
 
 export const DEFAULT_FILE_MESSAGE = "// Select a file to view its content";
-
-const DEFAULT_NEW_FILE_MESSAGE = "// File content is not available yet";
-
-function decodeInlineStoragePath(storagePath) {
-    if (
-        typeof storagePath !== "string" ||
-        !storagePath.startsWith("inline://")
-    ) {
-        return DEFAULT_NEW_FILE_MESSAGE;
-    }
-
-    const encodedContent = storagePath.slice("inline://".length);
-
-    try {
-        return decodeURIComponent(encodedContent);
-    } catch {
-        return DEFAULT_NEW_FILE_MESSAGE;
-    }
-}
 
 function buildTreeFromApiFiles(files) {
     const tree = {};
@@ -64,8 +45,8 @@ function buildTreeFromApiFiles(files) {
         }
 
         const fileName = parts[parts.length - 1];
-        cursor[fileName] = decodeInlineStoragePath(file?.storagePath);
-
+        // cursor[fileName] = file?.content || "// File content is not available";
+        cursor[fileName] = "// Loading...";
         const fullPath = parts.join("/");
         if (file?.id) {
             pathToId[fullPath] = file.id;
@@ -150,9 +131,7 @@ function getFindingLineRange(finding) {
     }
 
     const singleLine = Number(
-        finding?.line_number ??
-            finding?.line ??
-            finding?.start_line,
+        finding?.line_number ?? finding?.line ?? finding?.start_line,
     );
 
     if (Number.isInteger(singleLine) && singleLine > 0) {
@@ -170,7 +149,8 @@ function getFindingLineRange(finding) {
             const start = Number(matched[0]);
             const end = Number(matched[1] ?? matched[0]);
             if (Number.isInteger(start) && start > 0) {
-                const safeEnd = Number.isInteger(end) && end >= start ? end : start;
+                const safeEnd =
+                    Number.isInteger(end) && end >= start ? end : start;
                 return [start, safeEnd];
             }
         }
@@ -211,7 +191,10 @@ const PlaygroundEditorPage = () => {
         },
     );
 
-    const jobStatusQuery = useJobStatusQuery(currentJobId, Boolean(accessToken));
+    const jobStatusQuery = useJobStatusQuery(
+        currentJobId,
+        Boolean(accessToken),
+    );
     const jobStatus = (jobStatusQuery.data?.status || "").toLowerCase();
 
     const resultQuery = useJobResultQuery(
@@ -235,7 +218,9 @@ const PlaygroundEditorPage = () => {
 
     const errorMessage =
         wsError ||
-        (jobStatus === "failed" ? "Analysis failed" : getErrorMessage(queryError));
+        (jobStatus === "failed"
+            ? "Analysis failed"
+            : getErrorMessage(queryError));
 
     const summary = analysis?.summary || {
         risk_level: "low",
@@ -456,7 +441,7 @@ const PlaygroundEditorPage = () => {
 
         if (files.length > 0) {
             const { tree, pathToId } = buildTreeFromApiFiles(files);
-            setFiletree((prev) => (Object.keys(prev).length ? prev : tree));
+            setFiletree(tree);
             setFilePathToIdMap(pathToId);
             setActiveFile((prev) => prev ?? getFirstFilePath(tree));
         } else {
@@ -476,10 +461,58 @@ const PlaygroundEditorPage = () => {
         setCurrentJobId(storedJobId);
     }, [fileId]);
 
+    useEffect(() => {
+        if (!fileId || !activeFile) return;
+
+        let cancelled = false;
+
+        async function loadContent() {
+            try {
+                const res = await fetchFileContent(fileId);
+
+                if (cancelled) return;
+
+                // 🔴 SAFE extraction
+                const content = res?.data?.content ?? res?.content ?? null;
+
+                if (typeof content !== "string") {
+                    console.error("Invalid content shape:", res);
+                    return;
+                }
+
+                setFiletree((prev) =>
+                    updateFileNode(prev, activeFile, content),
+                );
+            } catch (err) {
+                console.error("LOAD CONTENT ERROR:", err);
+            }
+        }
+
+        loadContent();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [fileId, activeFile]);
+
+    useEffect(() => {
+        if (!activeFile) return;
+
+        const id = filePathToIdMap[activeFile] ?? null;
+
+        setFileId(id);
+    }, [activeFile, filePathToIdMap]);
     // Jump to a specific file when opened from My Analysis page
     useEffect(() => {
-        if (!targetFileId || !filePathToIdMap || Object.keys(filePathToIdMap).length === 0) return;
-        const entry = Object.entries(filePathToIdMap).find(([, id]) => id === targetFileId);
+        if (
+            !targetFileId ||
+            !filePathToIdMap ||
+            Object.keys(filePathToIdMap).length === 0
+        )
+            return;
+        const entry = Object.entries(filePathToIdMap).find(
+            ([, id]) => id === targetFileId,
+        );
         if (entry) setActiveFile(entry[0]);
     }, [targetFileId, filePathToIdMap]);
 
@@ -555,7 +588,10 @@ const PlaygroundEditorPage = () => {
                                     >
                                         <ArrowLeft size={15} />
                                     </Link>
-                                    <h2 className="text-sm font-medium text-neutral-200 truncate" title={playground?.name || "Playground"}>
+                                    <h2
+                                        className="text-sm font-medium text-neutral-200 truncate"
+                                        title={playground?.name || "Playground"}
+                                    >
                                         {playground?.name || "Playground"}
                                     </h2>
                                 </div>
@@ -585,22 +621,34 @@ const PlaygroundEditorPage = () => {
                                     </span>
                                 </div>
                             ) : (
-                                <span className="text-xs text-neutral-700">No file selected</span>
+                                <span className="text-xs text-neutral-700">
+                                    No file selected
+                                </span>
                             )}
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
                             <button
-                                onClick={() => setIsExplorerOpen(!isExplorerOpen)}
+                                onClick={() =>
+                                    setIsExplorerOpen(!isExplorerOpen)
+                                }
                                 className={`p-1.5 rounded transition-colors ${isExplorerOpen ? "bg-white/8 text-neutral-300" : "text-neutral-600 hover:text-neutral-300"}`}
-                                title={isExplorerOpen ? "Hide Explorer" : "Show Explorer"}
+                                title={
+                                    isExplorerOpen
+                                        ? "Hide Explorer"
+                                        : "Show Explorer"
+                                }
                             >
                                 <PanelLeft size={15} />
                             </button>
                             <button
                                 onClick={() => setIsAuditOpen(!isAuditOpen)}
                                 className={`p-1.5 rounded transition-colors ${isAuditOpen ? "bg-white/8 text-neutral-300" : "text-neutral-600 hover:text-neutral-300"}`}
-                                title={isAuditOpen ? "Hide Audit Panel" : "Show Audit Panel"}
+                                title={
+                                    isAuditOpen
+                                        ? "Hide Audit Panel"
+                                        : "Show Audit Panel"
+                                }
                             >
                                 <PanelRight size={15} />
                             </button>
@@ -658,7 +706,9 @@ const PlaygroundEditorPage = () => {
                         Standard
                     </span>
                 </div>
-                <span className="text-violet-500 font-medium">Menti Engine v3.0</span>
+                <span className="text-violet-500 font-medium">
+                    Menti Engine v3.0
+                </span>
             </footer>
         </div>
     );

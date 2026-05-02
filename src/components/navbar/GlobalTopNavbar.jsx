@@ -54,28 +54,6 @@ function GlobalTopNavbar() {
 
       {/* Right: Search + Actions */}
       <div className="flex items-center gap-2 min-w-0">
-        {/* Search */}
-        <label
-          className="flex items-center gap-2 h-8 px-3 rounded-md border border-white/[0.08] bg-white/[0.04] min-w-[220px] max-w-[340px] cursor-text transition-colors focus-within:border-violet-500/50"
-          aria-label="Search"
-        >
-          <Search className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
-          <input
-            type="text"
-            placeholder="Search"
-            readOnly
-            className="border-none outline-none w-full bg-transparent text-neutral-300 text-sm placeholder:text-neutral-600"
-          />
-        </label>
-
-        {/* Notifications */}
-        <button
-          type="button"
-          className="w-8 h-8 rounded-md border border-white/[0.08] bg-white/[0.04] grid place-items-center text-neutral-400 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-150"
-          aria-label="Notifications"
-        >
-          <Bell className="w-4 h-4" />
-        </button>
 
         {/* Profile */}
         <button

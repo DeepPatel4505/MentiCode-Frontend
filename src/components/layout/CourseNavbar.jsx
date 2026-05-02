@@ -1,15 +1,25 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { Zap } from "lucide-react";
+import { Zap, ArrowLeft } from "lucide-react";
 import { selectUser, selectIsAuth } from "@/app/store/slices/authSlice";
 import { Avatar } from "@/components/ui/index";
 
 export default function CourseNavbar({ courseTitle, courseSlug }) {
   const user   = useSelector(selectUser);
   const isAuth = useSelector(selectIsAuth);
+  const navigate = useNavigate();
 
   return (
     <div className="h-14 shrink-0 border-b border-border bg-card/95 backdrop-blur-md flex items-center px-4 gap-3 z-40">
+      {/* Back button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground shrink-0"
+        title="Go back"
+      >
+        <ArrowLeft className="w-4 h-4" />
+      </button>
+
       {/* Logo */}
       <Link to="/" className="flex items-center gap-2.5 shrink-0">
         <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">

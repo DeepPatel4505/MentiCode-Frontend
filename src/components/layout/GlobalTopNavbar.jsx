@@ -78,40 +78,6 @@ function GlobalTopNavbar() {
       </div>
 
       <div className="flex items-center gap-3.5 min-w-0">
-        <label 
-          className="
-            min-w-[min(280px,45vw)] h-8.5 
-            border border-nav rounded-full 
-            bg-(--ui-bg-neutral) 
-            flex items-center px-3
-          " 
-          aria-label="Search"
-        >
-          <input 
-            type="text" 
-            placeholder="Search" 
-            readOnly 
-            className="
-              border-none outline-none 
-              w-full bg-transparent 
-              text-(--ui-text-neutral) text-sm
-              placeholder:text-(--ui-text-dim)
-            "
-          />
-        </label>
-
-        <button 
-          type="button" 
-          className="
-            border border-lighter bg-elevated 
-            text-white rounded-full 
-            w-8.5 h-8.5 
-            grid place-items-center
-          " 
-          aria-label="Notifications"
-        >
-          <span className="w-2 h-2 rounded-full bg-active" />
-        </button>
 
         <button 
           ref={profileButtonRef}

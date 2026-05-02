@@ -3,7 +3,7 @@ import { LayoutDashboard, Terminal, FolderSearch } from "lucide-react";
 import { cn } from "../../../lib/utils.js";
 
 const analyzeNavigation = [
-  { path: "/analyze",             label: "Dashboard",   end: true, icon: LayoutDashboard },
+  { path: "/analyze/dashboard",   label: "Dashboard",   end: true, icon: LayoutDashboard },
   { path: "/analyze/playground",  label: "Playground",             icon: Terminal },
   { path: "/analyze/my-analysis", label: "My Analysis",            icon: FolderSearch },
 ];

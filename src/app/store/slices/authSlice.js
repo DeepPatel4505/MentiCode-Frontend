@@ -24,7 +24,11 @@ export const registerUser = createAsyncThunk("auth/register", async (data, { rej
 export const logoutUser = createAsyncThunk("auth/logout", async (_, { rejectWithValue }) => {
   try {
     await api.post("/auth/logout");
-  } catch (_) {}
+  } catch (err) {
+    // Backend error is non-fatal — we still want to clear the client state.
+    // Return a resolved (fulfilled) action so the fulfilled reducer always fires.
+    return null;
+  }
 });
 
 export const fetchMe = createAsyncThunk("auth/me", async (_, { rejectWithValue }) => {
@@ -103,6 +107,11 @@ const authSlice = createSlice({
     builder.addCase(fetchMe.fulfilled, (s, a) => {
       s.user = a.payload;
       s.isAuth = true;
+      // accessToken may already be in localStorage; keep it in state too
+      if (!s.accessToken) {
+        const stored = localStorage.getItem("accessToken");
+        if (stored) s.accessToken = stored;
+      }
     });
 
     // Upgrade
